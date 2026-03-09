@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Football Strike - Crash Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Header -->
+        <header class="game-header">
+            <div class="logo">
+                <span class="logo-icon">⚽</span>
+                <span class="logo-text">FOOTBALL STRIKE</span>
+            </div>
+            <div class="balance-display">
+                <span class="balance-label">SALDO</span>
+                <span class="balance-value" id="balance">$1000.00</span>
+            </div>
+        </header>
+
+        <!-- Main Game Area -->
+        <main class="game-main">
+            <div class="stadium-container">
+                <canvas id="gameCanvas"></canvas>
+                
+                <!-- Multiplier Display -->
+                <div class="multiplier-overlay" id="multiplierOverlay">
+                    <span class="multiplier-label">MULTIPLICADOR</span>
+                    <span class="multiplier-value" id="multiplier">1.00</span>
+                    <span class="multiplier-x">x</span>
+                </div>
+
+                <!-- Crash Indicator -->
+                <div class="crash-indicator" id="crashIndicator">
+                    <span class="crash-text">CRASH!</span>
+                </div>
+            </div>
+
+            <!-- Betting Panel -->
+            <aside class="betting-panel">
+                <div class="panel-section">
+                    <h3>APUESTA</h3>
+                    <div class="bet-input-group">
+                        <button class="btn-mini" id="halfBet">÷2</button>
+                        <input type="number" id="betAmount" value="10" min="1" max="1000">
+                        <button class="btn-mini" id="doubleBet">×2</button>
+                    </div>
+                    <div class="quick-bets">
+                        <button class="quick-bet" data-amount="5">$5</button>
+                        <button class="quick-bet" data-amount="10">$10</button>
+                        <button class="quick-bet" data-amount="25">$25</button>
+                        <button class="quick-bet" data-amount="50">$50</button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>APUESTAS</h3>
+                    <div class="bet-buttons">
+                        <button class="btn-bet" id="placeBet">APOSTAR</button>
+                        <button class="btn-cashout" id="cashOut" disabled>COBRAR</button>
+                    </div>
+                </div>
+
+                <div class="panel-section stats">
+                    <h3>HISTORIAL</h3>
+                    <div class="history-list" id="historyList">
+                        <!-- History items populated by JS -->
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <div class="current-bet-info" id="currentBetInfo">
+                        <span class="info-label">Apuesta actual:</span>
+                        <span class="info-value" id="currentBetDisplay">$0.00</span>
+                    </div>
+                    <div class="potential-win" id="potentialWin">
+                        <span class="info-label">Ganancia potencial:</span>
+                        <span class="info-value" id="potentialWinDisplay">$0.00</span>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Game Over Modal -->
+        <div class="modal" id="gameOverModal">
+            <div class="modal-content">
+                <h2 class="modal-title" id="modalTitle">¡GANASTE!</h2>
+                <p class="modal-amount" id="modalAmount">+$50.00</p>
+                <p class="modal-multiplier" id="modalMultiplier">x5.00</p>
+                <button class="btn-modal" id="closeModal">CONTINUAR</button>
+            </div>
+        </div>
+
+        <!-- Instructions Modal -->
+        <div class="modal" id="instructionsModal">
+            <div class="modal-content">
+                <h2 class="modal-title">¿CÓMO JUGAR?</h2>
+                <div class="instructions">
+                    <p>1. <strong>Apuesta</strong> una cantidad</p>
+                    <p>2. El <strong>multiplicador</strong> comenzará a subir</p>
+                    <p>3. Presiona <strong>COBRAR</strong> antes de que crashee</p>
+                    <p>4. Si cobras a <strong>x2.00</strong>, ganas el doble de tu apuesta</p>
+                    <p>5. ¡Si crashea antes de cobrar, pierdes!</p>
+                </div>
+                <button class="btn-modal" id="closeInstructions">¡ENTENDIDO!</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/game.js"></script>
+</body>
+</html>
