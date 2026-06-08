@@ -155,7 +155,7 @@ button {
 
 .stage-copy h2 {
     font-family: "Oswald", sans-serif;
-    font-size: clamp(2rem, 5vw, 4.7rem);
+    font-size: clamp(2rem, 4.5vw, 4rem);
     line-height: 0.95;
     text-transform: uppercase;
 }
@@ -243,6 +243,7 @@ button {
     background-size: 42px 42px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.36);
     transform: translateX(-50%);
+    overflow: hidden;
 }
 
 .goal-zone {
@@ -267,18 +268,31 @@ button {
 }
 
 .goal-zone span {
-    max-width: 110px;
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    max-width: 118px;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: rgba(2, 10, 7, 0.68);
     font-family: "Oswald", sans-serif;
-    font-size: 0.86rem;
+    font-size: 0.72rem;
     letter-spacing: 0.08em;
     text-align: center;
     text-transform: uppercase;
+    transform: translateX(-50%);
 }
 
 .goal-zone:hover:not(:disabled),
 .goal-zone.selected {
     color: var(--ink);
     background: rgba(217, 180, 50, 0.86);
+}
+
+.goal-zone:hover:not(:disabled) span,
+.goal-zone.selected span,
+.goal-zone.scored span {
+    background: rgba(255, 255, 255, 0.82);
 }
 
 .goal-zone:disabled {
