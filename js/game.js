@@ -31,6 +31,7 @@ class PenaltyShootoutGame {
             halfBet: document.getElementById('halfBet'),
             doubleBet: document.getElementById('doubleBet'),
             startRound: document.getElementById('startRound'),
+            randomShot: document.getElementById('randomShot'),
             collectWinnings: document.getElementById('collectWinnings'),
             actionHint: document.getElementById('actionHint'),
             roundStatus: document.getElementById('roundStatus'),
@@ -54,10 +55,12 @@ class PenaltyShootoutGame {
         this.bindEvents();
         this.updateUI();
         this.setZonesEnabled(false);
+        this.elements.randomShot.disabled = false;
     }
 
     bindEvents() {
         this.elements.startRound.addEventListener('click', () => this.startRound());
+        this.elements.randomShot.addEventListener('click', () => this.randomShot());
         this.elements.collectWinnings.addEventListener('click', () => this.requestCollect());
         this.elements.closeModal.addEventListener('click', () => this.closeModal());
         this.elements.halfBet.addEventListener('click', () => this.adjustBet(0.5));
@@ -107,12 +110,12 @@ class PenaltyShootoutGame {
 
         const betAmount = Number.parseFloat(this.elements.betAmount.value);
         if (!Number.isFinite(betAmount) || betAmount <= 0) {
-            this.setBanner('Introduce una apuesta valida.');
+            this.setBanner('Apuesta invalida');
             return;
         }
 
         if (!this.externalWallet && betAmount > this.balance) {
-            this.setBanner('Saldo demo insuficiente.');
+            this.setBanner('Saldo insuficiente');
             return;
         }
 
@@ -129,11 +132,25 @@ class PenaltyShootoutGame {
         this.resetField();
         this.elements.betAmount.disabled = true;
         this.elements.startRound.disabled = true;
+        this.elements.startRound.textContent = 'Activo';
         this.elements.collectWinnings.disabled = true;
+        this.elements.randomShot.disabled = false;
         this.setZonesEnabled(true);
-        this.setBanner('Selecciona una de las 6 zonas para lanzar.');
+        this.setBanner('Elige zona');
         this.emit('round-started', this.getRoundState());
         this.updateUI();
+    }
+
+    randomShot() {
+        if (!this.isRoundActive) {
+            this.startRound();
+        }
+
+        if (!this.isRoundActive || this.awaitingResolution) return;
+
+        const zones = Object.keys(this.zoneCoordinates);
+        const zone = zones[Math.floor(Math.random() * zones.length)];
+        this.selectZone(zone);
     }
 
     selectZone(zone) {
@@ -141,10 +158,11 @@ class PenaltyShootoutGame {
 
         this.awaitingResolution = true;
         this.setZonesEnabled(false);
+        this.elements.randomShot.disabled = true;
         this.clearZoneStates();
         this.markZone(zone, 'selected');
         this.animateShot(zone);
-        this.setBanner('Disparo enviado. Esperando resolucion del agregador...');
+        this.setBanner('Tirando...');
 
         const payload = {
             ...this.getRoundState(),
@@ -193,11 +211,13 @@ class PenaltyShootoutGame {
         this.history = this.history.slice(0, 12);
 
         if (this.goals === this.multipliers.length) {
-            this.setBanner('Gol y multiplicador maximo x12 desbloqueado. Cobra el premio.');
+            this.setBanner('x12 listo');
             this.setZonesEnabled(false);
+            this.elements.randomShot.disabled = true;
         } else {
-            this.setBanner(`Gol ${this.goals}. Puedes cobrar o volver a tirar.`);
+            this.setBanner(`Gol ${this.goals}`);
             this.setZonesEnabled(true);
+            this.elements.randomShot.disabled = false;
         }
 
         this.elements.collectWinnings.disabled = false;
@@ -256,7 +276,9 @@ class PenaltyShootoutGame {
         this.awaitingResolution = false;
         this.elements.betAmount.disabled = false;
         this.elements.startRound.disabled = false;
+        this.elements.startRound.textContent = 'Jugar';
         this.elements.collectWinnings.disabled = true;
+        this.elements.randomShot.disabled = false;
         this.setZonesEnabled(false);
         this.showResultModal(status, payout, result.detail);
         this.emit('round-finished', {
@@ -328,10 +350,10 @@ class PenaltyShootoutGame {
     }
 
     getStatusLabel() {
-        if (this.awaitingResolution) return 'Resolviendo disparo';
-        if (this.isRoundActive && this.goals > 0) return 'Gol confirmado';
-        if (this.isRoundActive) return 'Porteria activa';
-        return 'Prepara tu apuesta';
+        if (this.awaitingResolution) return 'Tirando';
+        if (this.isRoundActive && this.goals > 0) return `Gol ${this.goals}`;
+        if (this.isRoundActive) return 'Elige zona';
+        return 'Listo';
     }
 
     updatePayoutPreview() {
@@ -353,7 +375,6 @@ class PenaltyShootoutGame {
         this.elements.historyList.innerHTML = '';
 
         if (this.history.length === 0) {
-            this.elements.historyList.textContent = 'Sin rondas todavia.';
             return;
         }
 
@@ -405,7 +426,7 @@ class PenaltyShootoutGame {
         this.elements.ball.classList.remove('kicked');
         this.elements.ball.style.left = '50%';
         this.elements.ball.style.top = '';
-        this.elements.ball.style.bottom = '42px';
+        this.elements.ball.style.bottom = '';
     }
 
     adjustBet(factor) {
@@ -427,10 +448,10 @@ class PenaltyShootoutGame {
         this.elements.modalTitle.textContent = won ? 'Cobro registrado' : 'Penalti atajado';
         this.elements.modalAmount.textContent = won ? this.formatMoney(payout) : `-${this.formatMoney(this.currentBet)}`;
         this.elements.modalAmount.classList.toggle('loss', !won);
-        this.elements.modalDetail.textContent = detail || (won ? 'Liquidacion enviada al agregador.' : 'Ronda finalizada sin premio.');
+        this.elements.modalDetail.textContent = detail || (won ? 'Liquidacion enviada.' : 'Sin premio.');
         this.elements.roundModal.classList.add('active');
         this.elements.roundModal.setAttribute('aria-hidden', 'false');
-        this.setBanner('Prepara una nueva apuesta.');
+        this.setBanner('Nueva ronda');
     }
 
     closeModal() {
