@@ -49,6 +49,7 @@ class PenaltyShootoutGame {
             modalDetail: document.getElementById('modalDetail'),
             closeModal: document.getElementById('closeModal'),
             goalZones: [...document.querySelectorAll('.goal-zone')],
+            multiplierTrack: document.querySelector('.multiplier-track'),
             multiplierSteps: [...document.querySelectorAll('.multiplier-track li')]
         };
 
@@ -364,6 +365,9 @@ class PenaltyShootoutGame {
     }
 
     updateMultiplierTrack() {
+        const progress = this.goals <= 1 ? this.goals * 12.5 : 12.5 + ((this.goals - 1) / (this.multipliers.length - 1)) * 75;
+        this.elements.multiplierTrack.style.setProperty('--progress', `${Math.min(progress, 87.5)}%`);
+
         this.elements.multiplierSteps.forEach((step, index) => {
             const stepNumber = index + 1;
             step.classList.toggle('completed', stepNumber <= this.goals);

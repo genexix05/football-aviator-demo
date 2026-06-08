@@ -172,6 +172,7 @@ button {
     align-items: center;
     gap: 12px;
     list-style: none;
+    --progress: 0%;
 }
 
 .multiplier-track::before {
@@ -183,6 +184,19 @@ button {
     height: 5px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.34);
+}
+
+.multiplier-track::after {
+    content: "";
+    position: absolute;
+    left: 3%;
+    top: 8px;
+    width: var(--progress);
+    height: 5px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--gold-bright), var(--gold));
+    box-shadow: 0 0 14px rgba(247, 217, 87, 0.75);
+    transition: width 0.28s ease;
 }
 
 .multiplier-track li {
@@ -207,6 +221,8 @@ button {
 
 .multiplier-track li.completed span,
 .multiplier-track li.current span {
+    width: 12px;
+    height: 12px;
     background: var(--gold-bright);
     box-shadow: 0 0 16px var(--gold-bright);
 }
@@ -214,6 +230,7 @@ button {
 .multiplier-track li.completed strong,
 .multiplier-track li.current strong {
     color: var(--gold-bright);
+    text-shadow: 0 0 10px rgba(247, 217, 87, 0.8);
 }
 
 .stadium {
