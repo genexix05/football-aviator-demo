@@ -3,111 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Football Strike - Crash Game</title>
+    <title>TuZoca Penalty Shootout</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="game-container">
-        <!-- Header -->
+    <div class="game-shell">
         <header class="game-header">
-            <div class="logo">
-                <span class="logo-icon">⚽</span>
-                <span class="logo-text">FOOTBALL STRIKE</span>
+            <div class="brand">
+                <div class="brand-mark" aria-hidden="true">Z</div>
+                <div>
+                    <p class="brand-kicker">Casino online</p>
+                    <h1>TUZOCA PENALTIS</h1>
+                </div>
             </div>
-            <div class="balance-display">
-                <span class="balance-label">SALDO</span>
-                <span class="balance-value" id="balance">$1000.00</span>
+            <div class="wallet-card">
+                <span class="wallet-label">Saldo demo</span>
+                <strong id="balance">$1,000.00</strong>
             </div>
         </header>
 
-        <!-- Main Game Area -->
-        <main class="game-main">
-            <div class="stadium-container">
-                <canvas id="gameCanvas"></canvas>
-                
-                <!-- Multiplier Display -->
-                <div class="multiplier-overlay" id="multiplierOverlay">
-                    <span class="multiplier-label">MULTIPLICADOR</span>
-                    <span class="multiplier-value" id="multiplier">1.00</span>
-                    <span class="multiplier-x">x</span>
+        <main class="game-layout">
+            <section class="penalty-stage" aria-labelledby="stageTitle">
+                <div class="stage-copy">
+                    <p class="eyebrow">Penalty Shootout</p>
+                    <h2 id="stageTitle">Elige una zona y encadena goles</h2>
+                    <p class="stage-description">6 zonas de porteria, 5 goles para llegar al maximo multiplicador.</p>
                 </div>
 
-                <!-- Crash Indicator -->
-                <div class="crash-indicator" id="crashIndicator">
-                    <span class="crash-text">CRASH!</span>
+                <div class="scoreboard">
+                    <div>
+                        <span>Estado</span>
+                        <strong id="roundStatus">Prepara tu apuesta</strong>
+                    </div>
+                    <div>
+                        <span>Multiplicador actual</span>
+                        <strong id="currentMultiplier">x0.00</strong>
+                    </div>
+                    <div>
+                        <span>Gol en juego</span>
+                        <strong id="shotCounter">0/5</strong>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Betting Panel -->
-            <aside class="betting-panel">
-                <div class="panel-section">
-                    <h3>APUESTA</h3>
+                <div class="goal-scene">
+                    <div class="stadium-lights" aria-hidden="true"></div>
+                    <div class="goal-frame" role="group" aria-label="Selecciona una zona de la porteria">
+                        <button class="goal-zone" data-zone="top-left">
+                            <span>Arriba izquierda</span>
+                        </button>
+                        <button class="goal-zone" data-zone="top-center">
+                            <span>Arriba centro</span>
+                        </button>
+                        <button class="goal-zone" data-zone="top-right">
+                            <span>Arriba derecha</span>
+                        </button>
+                        <button class="goal-zone" data-zone="bottom-left">
+                            <span>Abajo izquierda</span>
+                        </button>
+                        <button class="goal-zone" data-zone="bottom-center">
+                            <span>Abajo centro</span>
+                        </button>
+                        <button class="goal-zone" data-zone="bottom-right">
+                            <span>Abajo derecha</span>
+                        </button>
+                    </div>
+                    <div class="keeper" id="keeper" aria-hidden="true"></div>
+                    <div class="ball" id="ball" aria-hidden="true"></div>
+                    <p class="result-banner" id="resultBanner">Apuesta para activar la porteria</p>
+                </div>
+
+                <ol class="multiplier-track" aria-label="Progresion de multiplicadores">
+                    <li data-step="1"><span>Gol 1</span><strong>x1.5</strong></li>
+                    <li data-step="2"><span>Gol 2</span><strong>x2</strong></li>
+                    <li data-step="3"><span>Gol 3</span><strong>x3</strong></li>
+                    <li data-step="4"><span>Gol 4</span><strong>x6</strong></li>
+                    <li data-step="5"><span>Gol 5</span><strong>x12</strong></li>
+                </ol>
+            </section>
+
+            <aside class="control-panel" aria-label="Panel de juego">
+                <section class="panel-card">
+                    <h3>Apuesta</h3>
                     <div class="bet-input-group">
-                        <button class="btn-mini" id="halfBet">÷2</button>
-                        <input type="number" id="betAmount" value="10" min="1" max="1000">
-                        <button class="btn-mini" id="doubleBet">×2</button>
+                        <button class="btn-mini" id="halfBet" type="button">÷2</button>
+                        <input type="number" id="betAmount" value="10" min="1" step="1" aria-label="Cantidad de apuesta">
+                        <button class="btn-mini" id="doubleBet" type="button">×2</button>
                     </div>
                     <div class="quick-bets">
-                        <button class="quick-bet" data-amount="5">$5</button>
-                        <button class="quick-bet" data-amount="10">$10</button>
-                        <button class="quick-bet" data-amount="25">$25</button>
-                        <button class="quick-bet" data-amount="50">$50</button>
+                        <button class="quick-bet" type="button" data-amount="5">$5</button>
+                        <button class="quick-bet" type="button" data-amount="10">$10</button>
+                        <button class="quick-bet" type="button" data-amount="25">$25</button>
+                        <button class="quick-bet" type="button" data-amount="50">$50</button>
                     </div>
-                </div>
+                </section>
 
-                <div class="panel-section">
-                    <h3>APUESTAS</h3>
-                    <div class="bet-buttons">
-                        <button class="btn-bet" id="placeBet">APOSTAR</button>
-                        <button class="btn-cashout" id="cashOut" disabled>COBRAR</button>
+                <section class="panel-card">
+                    <h3>Acciones</h3>
+                    <div class="action-buttons">
+                        <button class="btn-primary" id="startRound" type="button">Apostar</button>
+                        <button class="btn-secondary" id="collectWinnings" type="button" disabled>Cobrar</button>
                     </div>
-                </div>
+                    <p class="helper-text" id="actionHint">La porteria se activa despues de apostar.</p>
+                </section>
 
-                <div class="panel-section stats">
-                    <h3>HISTORIAL</h3>
-                    <div class="history-list" id="historyList">
-                        <!-- History items populated by JS -->
-                    </div>
-                </div>
+                <section class="panel-card payout-card">
+                    <h3>Ronda actual</h3>
+                    <dl>
+                        <div>
+                            <dt>Apuesta</dt>
+                            <dd id="currentBetDisplay">$0.00</dd>
+                        </div>
+                        <div>
+                            <dt>Ganancia visual</dt>
+                            <dd id="potentialWinDisplay">$0.00</dd>
+                        </div>
+                    </dl>
+                </section>
 
-                <div class="panel-section">
-                    <div class="current-bet-info" id="currentBetInfo">
-                        <span class="info-label">Apuesta actual:</span>
-                        <span class="info-value" id="currentBetDisplay">$0.00</span>
-                    </div>
-                    <div class="potential-win" id="potentialWin">
-                        <span class="info-label">Ganancia potencial:</span>
-                        <span class="info-value" id="potentialWinDisplay">$0.00</span>
-                    </div>
-                </div>
+                <section class="panel-card">
+                    <h3>Preparado para agregador</h3>
+                    <ul class="integration-list">
+                        <li>El cliente emite eventos de ronda, disparo y cobro.</li>
+                        <li>El resultado del disparo entra por <code>resolveShot()</code>.</li>
+                        <li>La liquidacion real queda fuera del cliente.</li>
+                    </ul>
+                </section>
+
+                <section class="panel-card">
+                    <h3>Historial</h3>
+                    <div class="history-list" id="historyList" aria-live="polite"></div>
+                </section>
             </aside>
         </main>
 
-        <!-- Game Over Modal -->
-        <div class="modal" id="gameOverModal">
-            <div class="modal-content">
-                <h2 class="modal-title" id="modalTitle">¡GANASTE!</h2>
-                <p class="modal-amount" id="modalAmount">+$50.00</p>
-                <p class="modal-multiplier" id="modalMultiplier">x5.00</p>
-                <button class="btn-modal" id="closeModal">CONTINUAR</button>
-            </div>
-        </div>
-
-        <!-- Instructions Modal -->
-        <div class="modal" id="instructionsModal">
-            <div class="modal-content">
-                <h2 class="modal-title">¿CÓMO JUGAR?</h2>
-                <div class="instructions">
-                    <p>1. <strong>Apuesta</strong> una cantidad</p>
-                    <p>2. El <strong>multiplicador</strong> comenzará a subir</p>
-                    <p>3. Presiona <strong>COBRAR</strong> antes de que crashee</p>
-                    <p>4. Si cobras a <strong>x2.00</strong>, ganas el doble de tu apuesta</p>
-                    <p>5. ¡Si crashea antes de cobrar, pierdes!</p>
-                </div>
-                <button class="btn-modal" id="closeInstructions">¡ENTENDIDO!</button>
+        <div class="modal" id="roundModal" aria-hidden="true">
+            <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+                <h2 class="modal-title" id="modalTitle">Ronda completada</h2>
+                <p class="modal-amount" id="modalAmount">$0.00</p>
+                <p class="modal-detail" id="modalDetail">Resultado pendiente</p>
+                <button class="btn-modal" id="closeModal" type="button">Continuar</button>
             </div>
         </div>
     </div>
