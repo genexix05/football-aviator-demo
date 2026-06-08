@@ -91,8 +91,17 @@ button {
     letter-spacing: 0.02em;
 }
 
+.top-logo {
+    width: clamp(118px, 16vw, 184px);
+    height: auto;
+    filter: drop-shadow(0 8px 22px rgba(0, 0, 0, 0.3));
+}
+
 .top-bar strong {
+    justify-self: end;
+    color: var(--gold-bright);
     font-size: clamp(1rem, 2vw, 1.35rem);
+    text-transform: uppercase;
 }
 
 .top-bar span {
@@ -106,19 +115,13 @@ button {
     text-transform: uppercase;
 }
 
-.top-bar time {
-    justify-self: end;
-    font-size: clamp(1rem, 2vw, 1.35rem);
-    font-weight: 700;
-}
-
 .multiplier-hud {
     position: relative;
     z-index: 6;
     display: grid;
     width: min(78vw, 790px);
     min-height: 34px;
-    grid-template-columns: 76px 1fr 76px;
+    grid-template-columns: 128px 1fr 62px;
     align-items: center;
     gap: 8px;
     margin: 0 auto;
@@ -128,27 +131,38 @@ button {
     box-shadow: inset 0 -12px 28px rgba(0, 0, 0, 0.25), 0 8px 30px rgba(0, 0, 0, 0.22);
 }
 
-.team-badge {
-    display: grid;
+.brand-chip {
+    display: flex;
+    align-items: center;
+    gap: 7px;
     height: 26px;
-    place-items: center;
+    padding: 3px 9px 3px 4px;
     overflow: hidden;
-    color: var(--white);
-    border-radius: 3px;
+    color: var(--gold-bright);
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(217, 180, 50, 0.2), rgba(217, 180, 50, 0.06));
     font-family: "Oswald", sans-serif;
     font-size: 0.76rem;
     font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
-.team-badge.left {
-    background: linear-gradient(90deg, #15935a 0 33%, #fff 33% 66%, #ff883e 66%);
-    color: rgba(0, 0, 0, 0.54);
+.brand-chip img {
+    width: 22px;
+    height: 22px;
 }
 
-.team-badge.right {
+.jackpot-chip {
+    display: grid;
+    height: 28px;
+    place-items: center;
     color: #071425;
-    background: var(--gold);
-    font-size: 1.3rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+    font-family: "Oswald", sans-serif;
+    font-size: 0.84rem;
+    font-weight: 700;
 }
 
 .multiplier-track {
@@ -373,18 +387,26 @@ button {
     z-index: 5;
     width: clamp(105px, 14vw, 154px);
     height: clamp(105px, 14vw, 154px);
+    display: grid;
+    place-items: center;
     border-radius: 50%;
     background:
-        radial-gradient(circle at 52% 50%, #171717 0 15%, transparent 16%),
-        radial-gradient(circle at 28% 30%, #171717 0 11%, transparent 12%),
-        radial-gradient(circle at 74% 27%, #171717 0 11%, transparent 12%),
-        radial-gradient(circle at 26% 72%, #171717 0 11%, transparent 12%),
-        radial-gradient(circle at 72% 72%, #171717 0 11%, transparent 12%),
-        radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.95), transparent 18%),
-        #f5f5ef;
-    box-shadow: 0 22px 26px rgba(0, 0, 0, 0.45);
+        radial-gradient(circle at 33% 23%, rgba(255, 246, 178, 0.72), transparent 18%),
+        linear-gradient(135deg, var(--gold-bright), var(--gold) 62%, #b38b18);
+    border: clamp(5px, 0.7vw, 8px) solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 22px 26px rgba(0, 0, 0, 0.45), 0 0 46px rgba(217, 180, 50, 0.34);
     transform: translateX(-50%);
     transition: left 0.45s ease, top 0.45s ease, bottom 0.45s ease, transform 0.45s ease;
+}
+
+.ball::before {
+    content: "Z";
+    color: #04110c;
+    font-family: "Oswald", sans-serif;
+    font-size: clamp(4.5rem, 9vw, 8rem);
+    font-weight: 700;
+    line-height: 1;
+    transform: skewX(-10deg);
 }
 
 .ball.kicked {
@@ -534,10 +556,14 @@ button {
     width: 88px;
     height: 88px;
     color: #061320;
-    background:
-        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.86) 0 28%, transparent 29%),
-        conic-gradient(var(--green) 0 18%, #f8fafc 18% 38%, var(--green) 38% 58%, #f8fafc 58% 78%, var(--green) 78%);
-    border: 7px solid rgba(255, 255, 255, 0.92);
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold) 60%, #b78c17);
+    border: 7px solid rgba(255, 255, 255, 0.88);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.32), 0 0 34px rgba(217, 180, 50, 0.38);
+    font-size: 1.9rem;
+}
+
+.random-play span {
+    transform: skewX(-10deg);
 }
 
 .collect-play {
@@ -649,7 +675,7 @@ button {
 @media (max-width: 900px) {
     .multiplier-hud {
         width: 88vw;
-        grid-template-columns: 58px 1fr 58px;
+        grid-template-columns: 112px 1fr 56px;
     }
 
     .goal-wrap {
@@ -688,8 +714,12 @@ button {
 
     .multiplier-hud {
         width: 95vw;
-        grid-template-columns: 46px 1fr 46px;
+        grid-template-columns: 42px 1fr 44px;
         gap: 5px;
+    }
+
+    .brand-chip span {
+        display: none;
     }
 
     .goal-wrap {

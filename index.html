@@ -7,19 +7,22 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23d9b432'/%3E%3Ctext x='32' y='45' text-anchor='middle' font-family='Arial,sans-serif' font-size='40' font-weight='700' fill='%2304110c'%3EZ%3C/text%3E%3C/svg%3E">
+    <link rel="icon" href="assets/tuzoca-isotype.svg">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div class="game-shell">
         <header class="top-bar">
-            <strong>Penalty Shoot-Out</strong>
+            <img class="top-logo" src="assets/tuzoca-wordmark.svg" alt="TuZoca">
             <span id="roundStatus">Listo</span>
-            <time>08:50</time>
+            <strong>Penalty</strong>
         </header>
 
         <section class="multiplier-hud" aria-label="Multiplicadores">
-            <div class="team-badge left">IRL</div>
+            <div class="brand-chip">
+                <img src="assets/tuzoca-isotype.svg" alt="">
+                <span>TuZoca</span>
+            </div>
             <ol class="multiplier-track">
                 <li data-step="1"><span></span><strong>x1.5</strong></li>
                 <li data-step="2"><span></span><strong>x2</strong></li>
@@ -27,7 +30,7 @@
                 <li data-step="4"><span></span><strong>x6</strong></li>
                 <li data-step="5"><span></span><strong>x12</strong></li>
             </ol>
-            <div class="team-badge right">Z</div>
+            <div class="jackpot-chip">MAX</div>
         </section>
 
         <main class="stadium">
@@ -53,7 +56,7 @@
 
         <footer class="bottom-console">
             <div class="bet-console">
-                <span>BET</span>
+                <span>Apuesta</span>
                 <div>
                     <button class="round-btn" id="halfBet" type="button" aria-label="Reducir apuesta">−</button>
                     <input type="number" id="betAmount" value="10" min="1" step="1" aria-label="Apuesta">
@@ -68,12 +71,12 @@
 
             <div class="center-actions">
                 <button class="main-play" id="startRound" type="button">Jugar</button>
-                <button class="random-play" id="randomShot" type="button">Random</button>
+                <button class="random-play" id="randomShot" type="button" aria-label="Tiro automatico"><span>Z</span></button>
                 <button class="collect-play" id="collectWinnings" type="button" disabled>Cobrar</button>
             </div>
 
             <div class="wallet-console">
-                <span>Balance</span>
+                <span>Saldo</span>
                 <strong id="balance">$1,000.00</strong>
                 <small><b id="currentMultiplier">x0.00</b> · <b id="shotCounter">0/5</b></small>
             </div>
