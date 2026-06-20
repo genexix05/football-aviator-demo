@@ -470,8 +470,8 @@ button {
 .shot-result-badge {
     position: absolute;
     left: var(--effect-x);
-    top: calc(var(--effect-y) - 58px);
-    z-index: 4;
+    top: calc(var(--effect-y) + 72px);
+    z-index: 12;
     padding: 9px 22px;
     border-radius: 999px;
     font-family: "Oswald", sans-serif;
