@@ -375,7 +375,7 @@ button {
     object-fit: contain;
     opacity: 0;
     transform: scale(.96);
-    transition: opacity 0.18s ease, transform 0.28s ease;
+    transition: transform 0.28s ease;
     will-change: opacity, transform;
 }
 
