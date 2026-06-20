@@ -473,8 +473,18 @@ class PenaltyShootoutGame {
         label.textContent = scored ? 'GOL' : 'ATAJADA';
         effect.appendChild(label);
 
+        const badge = document.createElement('div');
+        badge.className = `shot-result-badge ${scored ? 'goal' : 'miss'}`;
+        badge.textContent = scored ? 'GOOOL!' : 'ATAJADA';
+        badge.style.setProperty('--effect-x', `${point.x}px`);
+        badge.style.setProperty('--effect-y', `${point.y}px`);
+
         this.elements.shotEffects.appendChild(effect);
-        window.setTimeout(() => effect.remove(), scored ? 1700 : 1400);
+        this.elements.shotEffects.appendChild(badge);
+        window.setTimeout(() => {
+            effect.remove();
+            badge.remove();
+        }, scored ? 1800 : 1500);
     }
 
     clearShotEffects() {

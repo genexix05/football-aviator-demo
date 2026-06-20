@@ -441,9 +441,9 @@ button {
 }
 
 .ball.in-net {
-    z-index: 8;
+    z-index: 10;
     filter: drop-shadow(0 0 18px rgba(247, 217, 87, 0.58));
-    transform: translate(-50%, -50%) scale(0.34) rotate(18deg);
+    transform: translate(-50%, -50%) scale(0.46) rotate(18deg);
 }
 
 .ball.blocked {
@@ -465,6 +465,35 @@ button {
     top: var(--effect-y);
     transform: translate(-50%, -50%);
     pointer-events: none;
+}
+
+.shot-result-badge {
+    position: absolute;
+    left: var(--effect-x);
+    top: calc(var(--effect-y) - 58px);
+    z-index: 4;
+    padding: 9px 22px;
+    border-radius: 999px;
+    font-family: "Oswald", sans-serif;
+    font-size: clamp(1.35rem, 3vw, 2.15rem);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transform: translate(-50%, -50%);
+    animation: shotBadgePop 1.7s ease-out forwards;
+}
+
+.shot-result-badge.goal {
+    color: #061320;
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+    box-shadow: 0 0 34px rgba(247, 217, 87, 0.86);
+}
+
+.shot-result-badge.miss {
+    color: #fff;
+    background: rgba(239, 68, 68, 0.96);
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.72);
 }
 
 .goal-burst {
@@ -604,6 +633,25 @@ button {
     100% {
         opacity: 0;
         transform: translate(-50%, -95%) scale(.96);
+    }
+}
+
+@keyframes shotBadgePop {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, 16px) scale(.74);
+    }
+    18% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+    72% {
+        opacity: 1;
+        transform: translate(-50%, -58%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -92%) scale(.94);
     }
 }
 
