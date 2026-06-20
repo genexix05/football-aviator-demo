@@ -444,7 +444,7 @@ class PenaltyShootoutGame {
                 this.resetKeeper(false);
             }
             this.keeperResetTimer = null;
-        }, 850);
+        }, 1600);
     }
 
     clearKeeperResetTimer() {
