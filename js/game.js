@@ -1,475 +1,493 @@
 /**
- * FOOTBALL STRIKE - Crash Game
- * Professional JavaScript Game Logic
+ * TuZoca Penalty Shootout
+ * Front-end game shell prepared for external aggregator control.
  */
 
-class FootballAviator {
+class PenaltyShootoutGame {
     constructor() {
-        // Game State
+        this.currency = '$';
         this.balance = 1000;
         this.currentBet = 0;
-        this.multiplier = 1.0;
-        this.isPlaying = false;
-        this.hasCashedOut = false;
-        this.gameRunning = false;
-        this.crashPoint = 0;
-        
-        // Game Config
-        this.minMultiplier = 1.0;
-        this.maxMultiplier = 100.0;
-        this.baseGrowthRate = 0.03;
-        this.growthAcceleration = 0.002;
-        
-        // History
+        this.roundId = null;
+        this.goals = 0;
+        this.isRoundActive = false;
+        this.awaitingResolution = false;
+        this.externalWallet = false;
+        this.autoResolveDemo = true;
         this.history = [];
-        this.maxHistory = 20;
-        
-        // Animation
-        this.animationFrame = null;
-        this.lastTime = 0;
-        
-        // DOM Elements
+        this.multipliers = [1.5, 2, 3, 6, 12];
+        this.zoneCoordinates = {
+            'top-left': { left: '24%', top: '28%' },
+            'top-center': { left: '50%', top: '28%' },
+            'top-right': { left: '76%', top: '28%' },
+            'bottom-left': { left: '24%', top: '55%' },
+            'bottom-center': { left: '50%', top: '55%' },
+            'bottom-right': { left: '76%', top: '55%' }
+        };
+
         this.elements = {
             balance: document.getElementById('balance'),
             betAmount: document.getElementById('betAmount'),
-            multiplier: document.getElementById('multiplier'),
-            multiplierOverlay: document.getElementById('multiplierOverlay'),
-            crashIndicator: document.getElementById('crashIndicator'),
-            placeBetBtn: document.getElementById('placeBet'),
-            cashOutBtn: document.getElementById('cashOut'),
+            halfBet: document.getElementById('halfBet'),
+            doubleBet: document.getElementById('doubleBet'),
+            startRound: document.getElementById('startRound'),
+            randomShot: document.getElementById('randomShot'),
+            collectWinnings: document.getElementById('collectWinnings'),
+            actionHint: document.getElementById('actionHint'),
+            roundStatus: document.getElementById('roundStatus'),
+            currentMultiplier: document.getElementById('currentMultiplier'),
+            shotCounter: document.getElementById('shotCounter'),
             currentBetDisplay: document.getElementById('currentBetDisplay'),
             potentialWinDisplay: document.getElementById('potentialWinDisplay'),
             historyList: document.getElementById('historyList'),
-            gameOverModal: document.getElementById('gameOverModal'),
+            resultBanner: document.getElementById('resultBanner'),
+            ball: document.getElementById('ball'),
+            keeper: document.getElementById('keeper'),
+            roundModal: document.getElementById('roundModal'),
             modalTitle: document.getElementById('modalTitle'),
             modalAmount: document.getElementById('modalAmount'),
-            modalMultiplier: document.getElementById('modalMultiplier'),
+            modalDetail: document.getElementById('modalDetail'),
             closeModal: document.getElementById('closeModal'),
-            halfBet: document.getElementById('halfBet'),
-            doubleBet: document.getElementById('doubleBet')
+            goalZones: [...document.querySelectorAll('.goal-zone')],
+            multiplierTrack: document.querySelector('.multiplier-track'),
+            multiplierSteps: [...document.querySelectorAll('.multiplier-track li')]
         };
-        
-        this.init();
-    }
-    
-    init() {
+
         this.bindEvents();
-        this.updateBalance();
-        this.loadHistory();
-        this.showInstructions();
-        this.initCanvas();
+        this.updateUI();
+        this.setZonesEnabled(false);
+        this.elements.randomShot.disabled = false;
     }
-    
+
     bindEvents() {
-        // Bet controls
-        this.elements.placeBetBtn.addEventListener('click', () => this.placeBet());
-        this.elements.cashOutBtn.addEventListener('click', () => this.cashOut());
-        
-        // Bet amount controls
-        this.elements.halfBet.addEventListener('click', () => this.halfBet());
-        this.elements.doubleBet.addEventListener('click', () => this.doubleBet());
-        
-        // Quick bets
-        document.querySelectorAll('.quick-bet').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.elements.betAmount.value = e.target.dataset.amount;
+        this.elements.startRound.addEventListener('click', () => this.startRound());
+        this.elements.randomShot.addEventListener('click', () => this.randomShot());
+        this.elements.collectWinnings.addEventListener('click', () => this.requestCollect());
+        this.elements.closeModal.addEventListener('click', () => this.closeModal());
+        this.elements.halfBet.addEventListener('click', () => this.adjustBet(0.5));
+        this.elements.doubleBet.addEventListener('click', () => this.adjustBet(2));
+        this.elements.betAmount.addEventListener('input', () => this.updatePayoutPreview());
+
+        document.querySelectorAll('.quick-bet').forEach((button) => {
+            button.addEventListener('click', () => {
+                this.elements.betAmount.value = button.dataset.amount;
+                this.updatePayoutPreview();
             });
         });
-        
-        // Modal
-        this.elements.closeModal.addEventListener('click', () => this.closeModal());
-        
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' && this.isPlaying && !this.hasCashedOut) {
-                e.preventDefault();
-                this.cashOut();
-            }
-            if (e.code === 'Enter' && !this.isPlaying) {
-                this.placeBet();
-            }
+
+        this.elements.goalZones.forEach((zone) => {
+            zone.addEventListener('click', () => this.selectZone(zone.dataset.zone));
         });
-        
-        // Bet amount input
-        this.elements.betAmount.addEventListener('input', () => this.updatePotentialWin());
     }
-    
-    initCanvas() {
-        this.canvas = document.getElementById('gameCanvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.resizeCanvas();
-        
-        window.addEventListener('resize', () => this.resizeCanvas());
-        
-        // Initial render
-        this.renderBackground();
-    }
-    
-    resizeCanvas() {
-        const container = this.canvas.parentElement;
-        this.canvas.width = container.clientWidth;
-        this.canvas.height = container.clientHeight;
-        this.renderBackground();
-    }
-    
-    renderBackground() {
-        const ctx = this.ctx;
-        const w = this.canvas.width;
-        const h = this.canvas.height;
-        
-        // Stadium gradient background
-        const gradient = ctx.createLinearGradient(0, 0, 0, h);
-        gradient.addColorStop(0, '#0d1a0f');
-        gradient.addColorStop(1, '#061007');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, w, h);
-        
-        // Draw stadium lights (simple circles with glow)
-        const lights = [
-            { x: w * 0.1, y: h * 0.15 },
-            { x: w * 0.9, y: h * 0.15 },
-            { x: w * 0.1, y: h * 0.85 },
-            { x: w * 0.9, y: h * 0.85 }
-        ];
-        
-        lights.forEach(light => {
-            // Glow
-            const glowGradient = ctx.createRadialGradient(light.x, light.y, 0, light.x, light.y, 100);
-            glowGradient.addColorStop(0, 'rgba(255, 255, 200, 0.3)');
-            glowGradient.addColorStop(1, 'rgba(255, 255, 200, 0)');
-            ctx.fillStyle = glowGradient;
-            ctx.beginPath();
-            ctx.arc(light.x, light.y, 100, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Light point
-            ctx.fillStyle = '#fff';
-            ctx.beginPath();
-            ctx.arc(light.x, light.y, 5, 0, Math.PI * 2);
-            ctx.fill();
-        });
-        
-        // Draw pitch lines
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-        ctx.lineWidth = 2;
-        
-        // Center circle
-        ctx.beginPath();
-        ctx.arc(w / 2, h / 2, 80, 0, Math.PI * 2);
-        ctx.stroke();
-        
-        // Center line
-        ctx.beginPath();
-        ctx.moveTo(w / 2, 0);
-        ctx.lineTo(w / 2, h);
-        ctx.stroke();
-        
-        // Draw football in center
-        this.drawFootball(w / 2, h / 2, this.gameRunning ? this.multiplier : 1);
-    }
-    
-    drawFootball(x, y, scale) {
-        const ctx = this.ctx;
-        const baseSize = 30;
-        const size = baseSize * (1 + (scale - 1) * 0.1);
-        
-        // Glow effect
-        const glowSize = size * (2 + scale * 0.5);
-        const glow = ctx.createRadialGradient(x, y, 0, x, y, glowSize);
-        glow.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
-        glow.addColorStop(0.3, 'rgba(255, 150, 0, 0.4)');
-        glow.addColorStop(1, 'rgba(255, 100, 0, 0)');
-        
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(x, y, glowSize, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Ball shadow
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-        ctx.beginPath();
-        ctx.ellipse(x, y + size * 0.8, size * 0.8, size * 0.2, 0, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Ball
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(x, y, size, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Ball pattern (classic football)
-        ctx.fillStyle = '#1a1a1a';
-        
-        // Pentagon pattern
-        for (let i = 0; i < 5; i++) {
-            const angle = (i * 72 - 90) * Math.PI / 180;
-            const px = x + Math.cos(angle) * size * 0.5;
-            const py = y + Math.sin(angle) * size * 0.5;
-            
-            ctx.beginPath();
-            ctx.arc(px, py, size * 0.25, 0, Math.PI * 2);
-            ctx.fill();
+
+    configure(config = {}) {
+        if (typeof config.balance === 'number') {
+            this.balance = config.balance;
         }
-        
-        // Center pentagon
-        ctx.beginPath();
-        ctx.arc(x, y, size * 0.3, 0, Math.PI * 2);
-        ctx.fill();
+
+        if (typeof config.currency === 'string') {
+            this.currency = config.currency;
+        }
+
+        if (typeof config.externalWallet === 'boolean') {
+            this.externalWallet = config.externalWallet;
+        }
+
+        if (typeof config.autoResolveDemo === 'boolean') {
+            this.autoResolveDemo = config.autoResolveDemo;
+        }
+
+        this.updateUI();
+        this.emit('configured', {
+            balance: this.balance,
+            currency: this.currency,
+            externalWallet: this.externalWallet,
+            autoResolveDemo: this.autoResolveDemo
+        });
     }
-    
-    placeBet() {
-        const betAmount = parseFloat(this.elements.betAmount.value);
-        
-        if (isNaN(betAmount) || betAmount <= 0) {
-            this.showError('Introduce una apuesta válida');
+
+    startRound() {
+        if (this.isRoundActive) return;
+
+        const betAmount = Number.parseFloat(this.elements.betAmount.value);
+        if (!Number.isFinite(betAmount) || betAmount <= 0) {
+            this.setBanner('Apuesta invalida');
             return;
         }
-        
-        if (betAmount > this.balance) {
-            this.showError('Saldo insuficiente');
+
+        if (!this.externalWallet && betAmount > this.balance) {
+            this.setBanner('Saldo insuficiente');
             return;
         }
-        
+
         this.currentBet = betAmount;
-        this.balance -= betAmount;
-        this.isPlaying = true;
-        this.hasCashedOut = false;
-        this.multiplier = 1.0;
-        
-        this.updateBalance();
-        this.updateUI();
-        this.startGame();
-    }
-    
-    startGame() {
-        this.gameRunning = true;
-        
-        // Calculate crash point (weighted random)
-        // More likely to crash at lower multipliers
-        this.crashPoint = this.calculateCrashPoint();
-        
-        this.elements.placeBetBtn.disabled = true;
-        this.elements.cashOutBtn.disabled = false;
+        this.roundId = `round-${Date.now()}`;
+        this.goals = 0;
+        this.isRoundActive = true;
+        this.awaitingResolution = false;
+
+        if (!this.externalWallet) {
+            this.balance -= betAmount;
+        }
+
+        this.resetField();
         this.elements.betAmount.disabled = true;
-        
-        this.lastTime = performance.now();
-        this.gameLoop();
+        this.elements.startRound.disabled = true;
+        this.elements.startRound.textContent = 'Activo';
+        this.elements.collectWinnings.disabled = true;
+        this.elements.randomShot.disabled = false;
+        this.setZonesEnabled(true);
+        this.setBanner('Elige zona');
+        this.emit('round-started', this.getRoundState());
+        this.updateUI();
     }
-    
-    calculateCrashPoint() {
-        // Custom crash algorithm - weighted towards lower values
-        const rand = Math.random();
-        
-        // Probability decreases as multiplier increases
-        if (rand < 0.3) return 1.0 + Math.random() * 0.5;      // 1.0-1.5x (30%)
-        if (rand < 0.5) return 1.5 + Math.random() * 0.5;      // 1.5-2.0x (20%)
-        if (rand < 0.65) return 2.0 + Math.random() * 1.0;     // 2.0-3.0x (15%)
-        if (rand < 0.78) return 3.0 + Math.random() * 2.0;    // 3.0-5.0x (13%)
-        if (rand < 0.88) return 5.0 + Math.random() * 5.0;     // 5.0-10.0x (10%)
-        if (rand < 0.95) return 10.0 + Math.random() * 15.0;   // 10.0-25.0x (7%)
-        return 25.0 + Math.random() * 75.0;                     // 25.0-100.0x (5%)
+
+    randomShot() {
+        if (!this.isRoundActive) {
+            this.startRound();
+        }
+
+        if (!this.isRoundActive || this.awaitingResolution) return;
+
+        const zones = Object.keys(this.zoneCoordinates);
+        const zone = zones[Math.floor(Math.random() * zones.length)];
+        this.selectZone(zone);
     }
-    
-    gameLoop() {
-        if (!this.gameRunning) return;
-        
-        const currentTime = performance.now();
-        const deltaTime = (currentTime - this.lastTime) / 1000;
-        this.lastTime = currentTime;
-        
-        // Update multiplier with exponential growth
-        const growthRate = this.baseGrowthRate + (this.multiplier * this.growthAcceleration);
-        this.multiplier += growthRate * deltaTime * this.multiplier;
-        
-        // Update UI
-        this.updateMultiplierDisplay();
-        this.updatePotentialWin();
-        this.renderBackground();
-        
-        // Check for crash
-        if (this.multiplier >= this.crashPoint) {
-            this.crash();
+
+    selectZone(zone) {
+        if (!this.isRoundActive || this.awaitingResolution || !this.zoneCoordinates[zone]) return;
+
+        this.awaitingResolution = true;
+        this.setZonesEnabled(false);
+        this.elements.randomShot.disabled = true;
+        this.clearZoneStates();
+        this.resetKeeper();
+        this.markZone(zone, 'selected');
+        this.animateShot(zone);
+        this.setBanner('Tirando...');
+
+        const payload = {
+            ...this.getRoundState(),
+            requestedZone: zone,
+            nextMultiplier: this.getNextMultiplier()
+        };
+
+        this.emit('shot-requested', payload);
+
+        if (this.autoResolveDemo) {
+            window.setTimeout(() => {
+                this.resolveShot({
+                    scored: true,
+                    zone,
+                    goalkeeperZone: this.getDemoKeeperZone(zone),
+                    transactionId: `demo-${Date.now()}`
+                });
+            }, 650);
+        }
+    }
+
+    resolveShot(result = {}) {
+        if (!this.isRoundActive || !this.awaitingResolution) return;
+
+        const scored = Boolean(result.scored);
+        const zone = result.zone || result.requestedZone || this.getSelectedZone();
+        const goalkeeperZone = result.goalkeeperZone || zone;
+
+        this.awaitingResolution = false;
+        this.moveKeeper(goalkeeperZone);
+        this.clearZoneStates();
+        this.markZone(zone, scored ? 'scored' : 'missed');
+
+        if (!scored) {
+            this.finishRound({
+                status: 'loss',
+                payout: 0,
+                detail: 'El portero detuvo el penalti.',
+                transactionId: result.transactionId
+            });
             return;
         }
-        
-        this.animationFrame = requestAnimationFrame(() => this.gameLoop());
-    }
-    
-    cashOut() {
-        if (!this.isPlaying || this.hasCashedOut || !this.gameRunning) return;
-        
-        this.hasCashedOut = true;
-        const winAmount = this.currentBet * this.multiplier;
-        this.balance += winAmount;
-        
-        this.elements.cashOutBtn.disabled = true;
-        this.updateBalance();
-        
-        // Show win modal after short delay
-        setTimeout(() => {
-            this.showWinModal(winAmount, this.multiplier);
-        }, 500);
-    }
-    
-    crash() {
-        this.gameRunning = false;
-        
-        // Show crash indicator
-        this.elements.crashIndicator.classList.add('active');
-        
-        // Update history
-        if (!this.hasCashedOut) {
-            this.addToHistory(this.multiplier);
-        }
-        
-        setTimeout(() => {
-            this.elements.crashIndicator.classList.remove('active');
-            
-            if (!this.hasCashedOut) {
-                this.showLoseModal();
-            }
-            
-            this.resetGame();
-        }, 1500);
-    }
-    
-    resetGame() {
-        this.isPlaying = false;
-        this.currentBet = 0;
-        this.multiplier = 1.0;
-        this.hasCashedOut = false;
-        this.gameRunning = false;
-        
-        this.elements.placeBetBtn.disabled = false;
-        this.elements.cashOutBtn.disabled = true;
-        this.elements.betAmount.disabled = false;
-        
-        this.updateUI();
-        this.renderBackground();
-    }
-    
-    updateMultiplierDisplay() {
-        const displayMultiplier = this.multiplier.toFixed(2);
-        this.elements.multiplier.textContent = displayMultiplier;
-        
-        // Visual danger indication
-        if (this.multiplier > this.crashPoint * 0.8) {
-            this.elements.multiplier.classList.add('danger');
+
+        this.goals += 1;
+        this.history.unshift({ status: 'win', multiplier: this.getCurrentMultiplier(), goals: this.goals });
+        this.history = this.history.slice(0, 12);
+
+        if (this.goals === this.multipliers.length) {
+            this.setBanner('x12 listo');
+            this.setZonesEnabled(false);
+            this.elements.randomShot.disabled = true;
         } else {
-            this.elements.multiplier.classList.remove('danger');
+            this.setBanner(`Gol ${this.goals}`);
+            this.setZonesEnabled(true);
+            this.elements.randomShot.disabled = false;
         }
+
+        this.elements.collectWinnings.disabled = false;
+        this.emit('shot-resolved', {
+            ...this.getRoundState(),
+            scored: true,
+            zone,
+            goalkeeperZone,
+            transactionId: result.transactionId
+        });
+        this.updateUI();
     }
-    
-    updateBalance() {
-        this.elements.balance.textContent = `$${this.balance.toFixed(2)}`;
+
+    requestCollect() {
+        if (!this.isRoundActive || this.goals === 0 || this.awaitingResolution) return;
+
+        const payout = this.getPayoutPreview();
+        this.emit('collect-requested', {
+            ...this.getRoundState(),
+            previewPayout: payout
+        });
+
+        this.finishRound({
+            status: 'cashout',
+            payout,
+            detail: `Cobro solicitado con ${this.goals} gol(es).`
+        });
     }
-    
+
+    settleRound(settlement = {}) {
+        if (typeof settlement.balance === 'number') {
+            this.balance = settlement.balance;
+            this.updateUI();
+        }
+
+        this.emit('round-settled', {
+            ...this.getRoundState(),
+            settlement
+        });
+    }
+
+    finishRound(result) {
+        const payout = Number(result.payout) || 0;
+        const status = result.status || 'cashout';
+
+        if (!this.externalWallet && payout > 0) {
+            this.balance += payout;
+        }
+
+        if (status === 'loss') {
+            this.history.unshift({ status: 'loss', multiplier: 0, goals: this.goals });
+            this.history = this.history.slice(0, 12);
+        }
+
+        this.isRoundActive = false;
+        this.awaitingResolution = false;
+        this.elements.betAmount.disabled = false;
+        this.elements.startRound.disabled = false;
+        this.elements.startRound.textContent = 'Jugar';
+        this.elements.collectWinnings.disabled = true;
+        this.elements.randomShot.disabled = false;
+        this.setZonesEnabled(false);
+        this.showResultModal(status, payout, result.detail);
+        this.emit('round-finished', {
+            ...this.getRoundState(),
+            status,
+            payout,
+            transactionId: result.transactionId
+        });
+        this.currentBet = 0;
+        this.goals = 0;
+        this.roundId = null;
+        this.updateUI();
+    }
+
+    getRoundState() {
+        return {
+            roundId: this.roundId,
+            stake: this.currentBet,
+            goals: this.goals,
+            multiplier: this.getCurrentMultiplier(),
+            maxGoals: this.multipliers.length,
+            multipliers: [...this.multipliers]
+        };
+    }
+
+    getCurrentMultiplier() {
+        if (this.goals <= 0) return 0;
+        return this.multipliers[this.goals - 1];
+    }
+
+    getNextMultiplier() {
+        return this.multipliers[this.goals] || this.getCurrentMultiplier();
+    }
+
+    getPayoutPreview() {
+        return this.currentBet * this.getCurrentMultiplier();
+    }
+
+    getSelectedZone() {
+        const selected = this.elements.goalZones.find((zone) => zone.classList.contains('selected'));
+        return selected ? selected.dataset.zone : 'bottom-center';
+    }
+
+    getDemoKeeperZone(zone) {
+        const demoMap = {
+            'top-left': 'bottom-right',
+            'top-center': 'bottom-left',
+            'top-right': 'bottom-center',
+            'bottom-left': 'top-right',
+            'bottom-center': 'top-left',
+            'bottom-right': 'top-center'
+        };
+        return demoMap[zone] || 'top-left';
+    }
+
+    emit(name, detail) {
+        window.dispatchEvent(new CustomEvent(`penalty:${name}`, { detail }));
+    }
+
     updateUI() {
-        this.elements.currentBetDisplay.textContent = `$${this.currentBet.toFixed(2)}`;
-        this.updatePotentialWin();
-    }
-    
-    updatePotentialWin() {
-        const bet = parseFloat(this.elements.betAmount.value) || 0;
-        const potential = bet * this.multiplier;
-        this.elements.potentialWinDisplay.textContent = `$${potential.toFixed(2)}`;
-    }
-    
-    addToHistory(multiplier) {
-        this.history.unshift(multiplier);
-        if (this.history.length > this.maxHistory) {
-            this.history.pop();
-        }
-        this.saveHistory();
+        this.elements.balance.textContent = this.formatMoney(this.balance);
+        this.elements.roundStatus.textContent = this.getStatusLabel();
+        this.elements.currentMultiplier.textContent = `x${this.getCurrentMultiplier().toFixed(2)}`;
+        this.elements.shotCounter.textContent = `${this.goals}/${this.multipliers.length}`;
+        this.elements.currentBetDisplay.textContent = this.formatMoney(this.currentBet);
+        this.updatePayoutPreview();
+        this.updateMultiplierTrack();
         this.renderHistory();
     }
-    
-    loadHistory() {
-        const saved = localStorage.getItem('footballAviatorHistory');
-        if (saved) {
-            try {
-                this.history = JSON.parse(saved);
-                this.renderHistory();
-            } catch (e) {
-                this.history = [];
-            }
-        }
+
+    getStatusLabel() {
+        if (this.awaitingResolution) return 'Tirando';
+        if (this.isRoundActive && this.goals > 0) return `Gol ${this.goals}`;
+        if (this.isRoundActive) return 'Elige zona';
+        return 'Listo';
     }
-    
-    saveHistory() {
-        localStorage.setItem('footballAviatorHistory', JSON.stringify(this.history));
+
+    updatePayoutPreview() {
+        const baseBet = this.currentBet || Number.parseFloat(this.elements.betAmount.value) || 0;
+        const multiplier = this.isRoundActive ? this.getCurrentMultiplier() : this.multipliers[0];
+        const preview = baseBet * multiplier;
+        this.elements.potentialWinDisplay.textContent = this.formatMoney(preview);
     }
-    
-    renderHistory() {
-        this.elements.historyList.innerHTML = '';
-        
-        this.history.forEach(m => {
-            const item = document.createElement('div');
-            item.className = `history-item ${this.getHistoryColorClass(m)}`;
-            item.textContent = m.toFixed(2) + 'x';
-            this.elements.historyList.appendChild(item);
+
+    updateMultiplierTrack() {
+        const progress = this.goals <= 1 ? this.goals * 12.5 : 12.5 + ((this.goals - 1) / (this.multipliers.length - 1)) * 75;
+        this.elements.multiplierTrack.style.setProperty('--progress', `${Math.min(progress, 87.5)}%`);
+
+        this.elements.multiplierSteps.forEach((step, index) => {
+            const stepNumber = index + 1;
+            step.classList.toggle('completed', stepNumber <= this.goals);
+            step.classList.toggle('current', this.isRoundActive && stepNumber === this.goals + 1);
         });
     }
-    
-    getHistoryColorClass(multiplier) {
-        if (multiplier < 2) return 'low';
-        if (multiplier < 5) return 'medium';
-        return 'high';
+
+    renderHistory() {
+        this.elements.historyList.innerHTML = '';
+
+        if (this.history.length === 0) {
+            return;
+        }
+
+        this.history.forEach((item) => {
+            const element = document.createElement('span');
+            element.className = `history-item ${item.status}`;
+            element.textContent = item.status === 'loss' ? 'Atajada' : `${item.goals}G x${item.multiplier}`;
+            this.elements.historyList.appendChild(element);
+        });
     }
-    
-    showWinModal(amount, multiplier) {
-        this.elements.modalTitle.textContent = '¡GANASTE!';
-        this.elements.modalTitle.className = 'modal-title win';
-        this.elements.modalAmount.textContent = `+$${amount.toFixed(2)}`;
-        this.elements.modalAmount.className = 'modal-amount';
-        this.elements.modalMultiplier.textContent = `x${multiplier.toFixed(2)}`;
-        this.elements.gameOverModal.classList.add('active');
+
+    setZonesEnabled(enabled) {
+        this.elements.goalZones.forEach((zone) => {
+            zone.disabled = !enabled;
+        });
     }
-    
-    showLoseModal() {
-        this.elements.modalTitle.textContent = '¡PERDISTE!';
-        this.elements.modalTitle.className = 'modal-title lose';
-        this.elements.modalAmount.textContent = `-$${this.currentBet.toFixed(2)}`;
-        this.elements.modalAmount.className = 'modal-amount lose';
-        this.elements.modalMultiplier.textContent = `Crash en x${this.multiplier.toFixed(2)}`;
-        this.elements.gameOverModal.classList.add('active');
+
+    clearZoneStates() {
+        this.elements.goalZones.forEach((zone) => {
+            zone.classList.remove('selected', 'scored', 'missed');
+        });
     }
-    
-    closeModal() {
-        this.elements.gameOverModal.classList.remove('active');
-    }
-    
-    showError(message) {
-        // Simple alert for now - can be enhanced
-        console.error(message);
-        // Could add toast notification here
-    }
-    
-    showInstructions() {
-        const hasPlayed = localStorage.getItem('footballAviatorPlayed');
-        if (!hasPlayed) {
-            document.getElementById('instructionsModal').classList.add('active');
-            document.getElementById('closeInstructions').addEventListener('click', () => {
-                document.getElementById('instructionsModal').classList.remove('active');
-                localStorage.setItem('footballAviatorPlayed', 'true');
-            });
+
+    markZone(zoneName, className) {
+        const zone = this.elements.goalZones.find((item) => item.dataset.zone === zoneName);
+        if (zone) {
+            zone.classList.add(className);
         }
     }
-    
-    halfBet() {
-        const current = parseFloat(this.elements.betAmount.value) || 0;
-        this.elements.betAmount.value = Math.max(1, current / 2);
-        this.updatePotentialWin();
+
+    animateShot(zoneName) {
+        const coordinates = this.zoneCoordinates[zoneName];
+        this.elements.ball.classList.add('kicked');
+        this.elements.ball.style.left = coordinates.left;
+        this.elements.ball.style.top = coordinates.top;
+        this.elements.ball.style.bottom = 'auto';
     }
-    
-    doubleBet() {
-        const current = parseFloat(this.elements.betAmount.value) || 0;
-        this.elements.betAmount.value = Math.min(this.balance, current * 2);
-        this.updatePotentialWin();
+
+    moveKeeper(zoneName) {
+        const coordinates = this.zoneCoordinates[zoneName] || this.zoneCoordinates['bottom-center'];
+        const horizontalOffset = Number.parseInt(coordinates.left, 10) - 50;
+        const verticalOffset = Number.parseInt(coordinates.top, 10) < 40 ? -28 : 18;
+        const direction = this.getKeeperDirection(zoneName);
+
+        this.elements.keeper.classList.toggle('dive-left', direction === 'left');
+        this.elements.keeper.classList.toggle('dive-right', direction === 'right');
+        this.elements.keeper.style.transform = `translateX(calc(-50% + ${horizontalOffset * 4}px)) translateY(${verticalOffset}px)`;
+    }
+
+    getKeeperDirection(zoneName) {
+        if (zoneName.includes('left')) return 'left';
+        if (zoneName.includes('right')) return 'right';
+        return 'center';
+    }
+
+    resetKeeper() {
+        this.elements.keeper.classList.remove('dive-left', 'dive-right');
+        this.elements.keeper.style.transform = 'translateX(-50%)';
+    }
+
+    resetField() {
+        this.clearZoneStates();
+        this.resetKeeper();
+        this.elements.ball.classList.remove('kicked');
+        this.elements.ball.style.left = '50%';
+        this.elements.ball.style.top = '';
+        this.elements.ball.style.bottom = '';
+    }
+
+    adjustBet(factor) {
+        if (this.isRoundActive) return;
+
+        const current = Number.parseFloat(this.elements.betAmount.value) || 1;
+        const next = Math.max(1, Math.round(current * factor));
+        this.elements.betAmount.value = this.externalWallet ? next : Math.min(this.balance, next);
+        this.updatePayoutPreview();
+    }
+
+    setBanner(message) {
+        this.elements.resultBanner.textContent = message;
+        this.elements.actionHint.textContent = message;
+    }
+
+    showResultModal(status, payout, detail) {
+        const won = status !== 'loss';
+        this.elements.modalTitle.textContent = won ? 'Cobro registrado' : 'Penalti atajado';
+        this.elements.modalAmount.textContent = won ? this.formatMoney(payout) : `-${this.formatMoney(this.currentBet)}`;
+        this.elements.modalAmount.classList.toggle('loss', !won);
+        this.elements.modalDetail.textContent = detail || (won ? 'Liquidacion enviada.' : 'Sin premio.');
+        this.elements.roundModal.classList.add('active');
+        this.elements.roundModal.setAttribute('aria-hidden', 'false');
+        this.setBanner('Nueva ronda');
+    }
+
+    closeModal() {
+        this.elements.roundModal.classList.remove('active');
+        this.elements.roundModal.setAttribute('aria-hidden', 'true');
+        this.resetField();
+    }
+
+    formatMoney(amount) {
+        return `${this.currency}${Number(amount).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        })}`;
     }
 }
 
-// Initialize game when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    window.game = new FootballAviator();
+    window.PenaltyShootoutGame = new PenaltyShootoutGame();
 });
