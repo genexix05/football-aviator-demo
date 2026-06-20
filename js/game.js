@@ -161,6 +161,7 @@ class PenaltyShootoutGame {
         this.setZonesEnabled(false);
         this.elements.randomShot.disabled = true;
         this.clearZoneStates();
+        this.resetKeeper();
         this.markZone(zone, 'selected');
         this.animateShot(zone);
         this.setBanner('Tirando...');
@@ -421,12 +422,27 @@ class PenaltyShootoutGame {
         const coordinates = this.zoneCoordinates[zoneName] || this.zoneCoordinates['bottom-center'];
         const horizontalOffset = Number.parseInt(coordinates.left, 10) - 50;
         const verticalOffset = Number.parseInt(coordinates.top, 10) < 40 ? -28 : 18;
+        const direction = this.getKeeperDirection(zoneName);
+
+        this.elements.keeper.classList.toggle('dive-left', direction === 'left');
+        this.elements.keeper.classList.toggle('dive-right', direction === 'right');
         this.elements.keeper.style.transform = `translateX(calc(-50% + ${horizontalOffset * 4}px)) translateY(${verticalOffset}px)`;
+    }
+
+    getKeeperDirection(zoneName) {
+        if (zoneName.includes('left')) return 'left';
+        if (zoneName.includes('right')) return 'right';
+        return 'center';
+    }
+
+    resetKeeper() {
+        this.elements.keeper.classList.remove('dive-left', 'dive-right');
+        this.elements.keeper.style.transform = 'translateX(-50%)';
     }
 
     resetField() {
         this.clearZoneStates();
-        this.elements.keeper.style.transform = 'translateX(-50%)';
+        this.resetKeeper();
         this.elements.ball.classList.remove('kicked');
         this.elements.ball.style.left = '50%';
         this.elements.ball.style.top = '';

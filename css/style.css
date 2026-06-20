@@ -352,49 +352,48 @@ button {
 .keeper {
     position: absolute;
     left: 50%;
-    bottom: 0;
+    bottom: -12px;
     z-index: 4;
-    width: clamp(82px, 10vw, 118px);
-    height: clamp(138px, 17vw, 190px);
-    border-radius: 48% 48% 22% 22%;
-    background:
-        radial-gradient(circle at 50% 12%, #f0c39c 0 11%, transparent 12%),
-        linear-gradient(180deg, transparent 0 17%, #0d263d 17% 20%, #1dad5b 20% 52%, #0d263d 52% 57%, #1dad5b 57% 72%, #b5303e 72% 84%, #1b1f2d 84%);
-    filter: drop-shadow(0 16px 14px rgba(0, 0, 0, 0.34));
+    width: clamp(170px, 20vw, 240px);
+    height: clamp(190px, 24vw, 280px);
+    filter: drop-shadow(0 18px 18px rgba(0, 0, 0, 0.38));
     transform: translateX(-50%);
-    transition: transform 0.35s ease;
+    transform-origin: 50% 82%;
+    transition: transform 0.42s cubic-bezier(.2, .85, .2, 1), width 0.25s ease;
 }
 
-.keeper::before,
-.keeper::after {
-    content: "";
+.keeper.dive-left,
+.keeper.dive-right {
+    width: clamp(280px, 38vw, 440px);
+}
+
+.keeper-sprite {
     position: absolute;
-    top: 38%;
-    width: 76%;
-    height: 12%;
-    border-radius: 999px;
-    background: linear-gradient(90deg, #f0c39c, #e9f3ff 72%);
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0;
+    transform: scale(.96);
+    transition: opacity 0.18s ease, transform 0.28s ease;
+    will-change: opacity, transform;
 }
 
-.keeper::before {
-    left: -55%;
-    transform: rotate(-24deg);
+.keeper .keeper-idle {
+    opacity: 1;
+    transform: scale(1);
 }
 
-.keeper::after {
-    right: -55%;
-    transform: rotate(24deg);
+.keeper.dive-left .keeper-idle,
+.keeper.dive-right .keeper-idle {
+    opacity: 0;
+    transform: scale(.92);
 }
 
-.keeper span {
-    position: absolute;
-    top: 9%;
-    left: 50%;
-    width: 42%;
-    height: 18%;
-    border-radius: 50% 50% 45% 45%;
-    background: #101827;
-    transform: translateX(-50%);
+.keeper.dive-left .keeper-left,
+.keeper.dive-right .keeper-right {
+    opacity: 1;
+    transform: scale(1);
 }
 
 .ball {
