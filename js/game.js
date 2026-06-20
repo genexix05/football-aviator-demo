@@ -192,7 +192,7 @@ class PenaltyShootoutGame {
     }
 
     resolveShot(result = {}) {
-        if (!this.isRoundActive || !this.awaitingResolution) return;
+        if (!this.isRoundActive || (!this.awaitingResolution && !result.force)) return;
 
         const scored = Boolean(result.scored);
         const zone = result.zone || result.requestedZone || this.getSelectedZone();
@@ -631,4 +631,5 @@ class PenaltyShootoutGame {
 
 document.addEventListener('DOMContentLoaded', () => {
     window.PenaltyShootoutGame = new PenaltyShootoutGame();
+    window.resolvePenaltyShot = (result) => window.PenaltyShootoutGame.resolveShot(result);
 });
