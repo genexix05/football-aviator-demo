@@ -359,12 +359,13 @@ button {
     filter: drop-shadow(0 18px 18px rgba(0, 0, 0, 0.38));
     transform: translateX(-50%);
     transform-origin: 50% 82%;
-    transition: transform 0.42s cubic-bezier(.2, .85, .2, 1), width 0.25s ease;
+    transition: transform 0.58s cubic-bezier(.18, .9, .22, 1), width 0.28s ease, height 0.28s ease;
 }
 
 .keeper.dive-left,
 .keeper.dive-right {
-    width: clamp(280px, 38vw, 440px);
+    width: clamp(220px, 30vw, 360px);
+    height: clamp(158px, 20vw, 235px);
 }
 
 .keeper-sprite {
@@ -393,7 +394,7 @@ button {
 .keeper.dive-left .keeper-left,
 .keeper.dive-right .keeper-right {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(.96);
 }
 
 .ball {
@@ -412,7 +413,13 @@ button {
     border: clamp(5px, 0.7vw, 8px) solid rgba(255, 255, 255, 0.18);
     box-shadow: 0 22px 26px rgba(0, 0, 0, 0.45), 0 0 46px rgba(217, 180, 50, 0.34);
     transform: translateX(-50%);
-    transition: left 0.45s ease, top 0.45s ease, bottom 0.45s ease, transform 0.45s ease;
+    transition:
+        left 0.64s cubic-bezier(.16, .84, .2, 1),
+        top 0.64s cubic-bezier(.16, .84, .2, 1),
+        bottom 0.64s cubic-bezier(.16, .84, .2, 1),
+        transform 0.64s cubic-bezier(.16, .84, .2, 1),
+        opacity 0.28s ease;
+    will-change: left, top, bottom, transform;
 }
 
 .ball::before {
@@ -427,7 +434,169 @@ button {
 
 .ball.kicked {
     bottom: auto;
-    transform: translate(-50%, -50%) scale(0.48) rotate(260deg);
+    transform: translate(-50%, -50%) scale(0.42) rotate(260deg);
+}
+
+.ball.in-net {
+    z-index: 3;
+    filter: drop-shadow(0 0 18px rgba(247, 217, 87, 0.58));
+    transform: translate(-50%, -50%) scale(0.34) rotate(330deg);
+}
+
+.ball.blocked {
+    z-index: 7;
+    transform: translate(-50%, -50%) scale(0.5) rotate(-140deg);
+    opacity: 0.86;
+}
+
+.shot-effects {
+    position: absolute;
+    inset: 0;
+    z-index: 9;
+    pointer-events: none;
+}
+
+.shot-effect {
+    position: absolute;
+    left: var(--effect-x);
+    top: var(--effect-y);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.goal-burst {
+    width: 170px;
+    height: 170px;
+}
+
+.goal-burst::before,
+.goal-burst::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+}
+
+.goal-burst::before {
+    background:
+        radial-gradient(circle, rgba(247, 217, 87, 0.96) 0 9%, transparent 10%),
+        repeating-conic-gradient(from 0deg, rgba(247, 217, 87, 0.98) 0 9deg, transparent 9deg 18deg);
+    animation: goalBurst 0.9s ease-out forwards;
+}
+
+.goal-burst::after {
+    inset: 35px;
+    border: 3px solid rgba(255, 255, 255, 0.88);
+    box-shadow: 0 0 25px rgba(247, 217, 87, 0.9);
+    animation: goalRing 0.9s ease-out forwards;
+}
+
+.goal-text,
+.miss-text {
+    position: absolute;
+    left: 50%;
+    top: -20px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-family: "Oswald", sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+
+.goal-text {
+    color: #061320;
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+    box-shadow: 0 0 24px rgba(247, 217, 87, 0.72);
+    animation: resultPop 0.9s ease-out forwards;
+}
+
+.miss-splash {
+    width: 150px;
+    height: 150px;
+}
+
+.miss-splash::before,
+.miss-splash::after {
+    content: "";
+    position: absolute;
+    inset: 24px;
+    border-radius: 50%;
+    border: 3px solid rgba(239, 68, 68, 0.78);
+    animation: missRipple 0.82s ease-out forwards;
+}
+
+.miss-splash::after {
+    inset: 46px;
+    border-color: rgba(255, 255, 255, 0.6);
+    animation-delay: 0.08s;
+}
+
+.miss-text {
+    color: #fff;
+    background: rgba(239, 68, 68, 0.92);
+    box-shadow: 0 0 22px rgba(239, 68, 68, 0.58);
+    animation: resultPop 0.82s ease-out forwards;
+}
+
+@keyframes goalBurst {
+    0% {
+        opacity: 0;
+        transform: scale(.2) rotate(0deg);
+    }
+    18% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.4) rotate(34deg);
+    }
+}
+
+@keyframes goalRing {
+    0% {
+        opacity: 0;
+        transform: scale(.4);
+    }
+    20% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: scale(2.1);
+    }
+}
+
+@keyframes missRipple {
+    0% {
+        opacity: 0;
+        transform: scale(.4);
+    }
+    25% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.6);
+    }
+}
+
+@keyframes resultPop {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, 12px) scale(.8);
+    }
+    18% {
+        opacity: 1;
+        transform: translate(-50%, -2px) scale(1.08);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -42px) scale(.96);
+    }
 }
 
 .result-banner {

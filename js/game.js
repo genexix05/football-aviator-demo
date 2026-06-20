@@ -16,6 +16,8 @@ class PenaltyShootoutGame {
         this.autoResolveDemo = true;
         this.history = [];
         this.keeperResetTimer = null;
+        this.audioContext = null;
+        this.lastShotPoint = null;
         this.multipliers = [1.5, 2, 3, 6, 12];
         this.zoneCoordinates = {
             'top-left': { left: '24%', top: '28%' },
@@ -43,6 +45,7 @@ class PenaltyShootoutGame {
             historyList: document.getElementById('historyList'),
             resultBanner: document.getElementById('resultBanner'),
             ball: document.getElementById('ball'),
+            shotEffects: document.getElementById('shotEffects'),
             keeper: document.getElementById('keeper'),
             roundModal: document.getElementById('roundModal'),
             modalTitle: document.getElementById('modalTitle'),
@@ -165,6 +168,7 @@ class PenaltyShootoutGame {
         this.resetKeeper();
         this.markZone(zone, 'selected');
         this.animateShot(zone);
+        this.playKickSound();
         this.setBanner('Tirando...');
 
         const payload = {
@@ -198,14 +202,18 @@ class PenaltyShootoutGame {
         this.moveKeeper(goalkeeperZone);
         this.clearZoneStates();
         this.markZone(zone, scored ? 'scored' : 'missed');
+        this.showShotResult(scored, zone);
 
         if (!scored) {
-            this.finishRound({
-                status: 'loss',
-                payout: 0,
-                detail: 'El portero detuvo el penalti.',
-                transactionId: result.transactionId
-            });
+            this.setBanner('Atajada');
+            window.setTimeout(() => {
+                this.finishRound({
+                    status: 'loss',
+                    payout: 0,
+                    detail: 'El portero detuvo el penalti.',
+                    transactionId: result.transactionId
+                });
+            }, 850);
             return;
         }
 
@@ -412,6 +420,115 @@ class PenaltyShootoutGame {
     }
 
     animateShot(zoneName) {
+        const point = this.getZonePoint(zoneName);
+        this.lastShotPoint = point;
+        this.elements.ball.classList.remove('in-net', 'blocked');
+        this.elements.ball.classList.add('kicked');
+        this.elements.ball.style.left = `${point.x}px`;
+        this.elements.ball.style.top = `${point.y}px`;
+        this.elements.ball.style.bottom = 'auto';
+    }
+
+    getZonePoint(zoneName) {
+        const zone = this.elements.goalZones.find((item) => item.dataset.zone === zoneName);
+        const stadiumRect = document.querySelector('.stadium').getBoundingClientRect();
+
+        if (!zone) {
+            const coordinates = this.zoneCoordinates[zoneName] || this.zoneCoordinates['bottom-center'];
+            return {
+                x: stadiumRect.width * (Number.parseInt(coordinates.left, 10) / 100),
+                y: stadiumRect.height * (Number.parseInt(coordinates.top, 10) / 100)
+            };
+        }
+
+        const rect = zone.getBoundingClientRect();
+        return {
+            x: rect.left - stadiumRect.left + rect.width / 2,
+            y: rect.top - stadiumRect.top + rect.height / 2
+        };
+    }
+
+    showShotResult(scored, zoneName) {
+        const point = this.lastShotPoint || this.getZonePoint(zoneName);
+        this.elements.ball.classList.toggle('in-net', scored);
+        this.elements.ball.classList.toggle('blocked', !scored);
+        this.spawnShotEffect(scored, point);
+
+        if (scored) {
+            this.playGoalSound();
+        } else {
+            this.playMissSound();
+        }
+    }
+
+    spawnShotEffect(scored, point) {
+        this.clearShotEffects();
+        const effect = document.createElement('div');
+        effect.className = `shot-effect ${scored ? 'goal-burst' : 'miss-splash'}`;
+        effect.style.setProperty('--effect-x', `${point.x}px`);
+        effect.style.setProperty('--effect-y', `${point.y}px`);
+
+        const label = document.createElement('span');
+        label.className = scored ? 'goal-text' : 'miss-text';
+        label.textContent = scored ? 'GOL' : 'ATAJADA';
+        effect.appendChild(label);
+
+        this.elements.shotEffects.appendChild(effect);
+        window.setTimeout(() => effect.remove(), 1100);
+    }
+
+    clearShotEffects() {
+        this.elements.shotEffects.innerHTML = '';
+    }
+
+    ensureAudioContext() {
+        if (!this.audioContext) {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) return null;
+            this.audioContext = new AudioContextClass();
+        }
+
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
+
+        return this.audioContext;
+    }
+
+    playTone(frequency, duration, type = 'sine', gainValue = 0.05, delay = 0) {
+        const context = this.ensureAudioContext();
+        if (!context) return;
+
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        const start = context.currentTime + delay;
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, start);
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(gainValue, start + 0.018);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+        oscillator.connect(gain).connect(context.destination);
+        oscillator.start(start);
+        oscillator.stop(start + duration + 0.03);
+    }
+
+    playKickSound() {
+        this.playTone(130, 0.08, 'triangle', 0.055);
+        this.playTone(72, 0.11, 'sine', 0.04, 0.035);
+    }
+
+    playGoalSound() {
+        [440, 660, 880].forEach((frequency, index) => {
+            this.playTone(frequency, 0.16, 'triangle', 0.045, index * 0.08);
+        });
+    }
+
+    playMissSound() {
+        this.playTone(180, 0.16, 'sawtooth', 0.035);
+        this.playTone(92, 0.2, 'sine', 0.04, 0.08);
+    }
+
+    moveBallToCoordinates(zoneName) {
         const coordinates = this.zoneCoordinates[zoneName];
         this.elements.ball.classList.add('kicked');
         this.elements.ball.style.left = coordinates.left;
@@ -464,8 +581,10 @@ class PenaltyShootoutGame {
 
     resetField() {
         this.clearZoneStates();
+        this.clearShotEffects();
+        this.lastShotPoint = null;
         this.resetKeeper();
-        this.elements.ball.classList.remove('kicked');
+        this.elements.ball.classList.remove('kicked', 'in-net', 'blocked');
         this.elements.ball.style.left = '50%';
         this.elements.ball.style.top = '';
         this.elements.ball.style.bottom = '';
