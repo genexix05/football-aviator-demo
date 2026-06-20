@@ -15,6 +15,7 @@ class PenaltyShootoutGame {
         this.externalWallet = false;
         this.autoResolveDemo = true;
         this.history = [];
+        this.keeperResetTimer = null;
         this.multipliers = [1.5, 2, 3, 6, 12];
         this.zoneCoordinates = {
             'top-left': { left: '24%', top: '28%' },
@@ -328,9 +329,9 @@ class PenaltyShootoutGame {
         const demoMap = {
             'top-left': 'bottom-right',
             'top-center': 'bottom-left',
-            'top-right': 'bottom-center',
+            'top-right': 'bottom-left',
             'bottom-left': 'top-right',
-            'bottom-center': 'top-left',
+            'bottom-center': 'top-right',
             'bottom-right': 'top-center'
         };
         return demoMap[zone] || 'top-left';
@@ -424,9 +425,11 @@ class PenaltyShootoutGame {
         const verticalOffset = Number.parseInt(coordinates.top, 10) < 40 ? -28 : 18;
         const direction = this.getKeeperDirection(zoneName);
 
+        this.clearKeeperResetTimer();
         this.elements.keeper.classList.toggle('dive-left', direction === 'left');
         this.elements.keeper.classList.toggle('dive-right', direction === 'right');
         this.elements.keeper.style.transform = `translateX(calc(-50% + ${horizontalOffset * 4}px)) translateY(${verticalOffset}px)`;
+        this.scheduleKeeperReset();
     }
 
     getKeeperDirection(zoneName) {
@@ -435,7 +438,26 @@ class PenaltyShootoutGame {
         return 'center';
     }
 
-    resetKeeper() {
+    scheduleKeeperReset() {
+        this.keeperResetTimer = window.setTimeout(() => {
+            if (this.isRoundActive && !this.awaitingResolution) {
+                this.resetKeeper(false);
+            }
+            this.keeperResetTimer = null;
+        }, 850);
+    }
+
+    clearKeeperResetTimer() {
+        if (this.keeperResetTimer) {
+            window.clearTimeout(this.keeperResetTimer);
+            this.keeperResetTimer = null;
+        }
+    }
+
+    resetKeeper(clearTimer = true) {
+        if (clearTimer) {
+            this.clearKeeperResetTimer();
+        }
         this.elements.keeper.classList.remove('dive-left', 'dive-right');
         this.elements.keeper.style.transform = 'translateX(-50%)';
     }
