@@ -474,7 +474,7 @@ class PenaltyShootoutGame {
         effect.appendChild(label);
 
         this.elements.shotEffects.appendChild(effect);
-        window.setTimeout(() => effect.remove(), 1100);
+        window.setTimeout(() => effect.remove(), scored ? 1700 : 1400);
     }
 
     clearShotEffects() {
