@@ -3,8 +3,166 @@
  * Front-end game shell prepared for external aggregator control.
  */
 
+class GameAudio {
+    constructor() {
+        this.context = null;
+        this.masterGain = null;
+        this.musicGain = null;
+        this.effectsGain = null;
+        this.musicTimer = null;
+        this.musicStep = 0;
+        this.enabled = true;
+        this.musicNotes = [196, 246.94, 293.66, 246.94, 220, 261.63, 329.63, 261.63];
+    }
+
+    toggle() {
+        this.enabled = !this.enabled;
+
+        if (this.enabled) {
+            this.prime();
+            this.startMusic();
+            return this.enabled;
+        }
+
+        this.stopMusic();
+        if (this.masterGain) {
+            this.masterGain.gain.setTargetAtTime(0, this.context.currentTime, 0.05);
+        }
+        return this.enabled;
+    }
+
+    prime() {
+        if (!this.enabled) return;
+
+        this.ensureContext();
+        if (!this.context) return;
+
+        if (this.context.state === 'suspended') {
+            this.context.resume();
+        }
+
+        this.masterGain.gain.setTargetAtTime(0.42, this.context.currentTime, 0.08);
+        this.startMusic();
+    }
+
+    ensureContext() {
+        if (this.context) return;
+
+        const AudioContext = globalThis.AudioContext || globalThis.webkitAudioContext;
+        if (!AudioContext) {
+            this.enabled = false;
+            return;
+        }
+
+        this.context = new AudioContext();
+        this.masterGain = this.context.createGain();
+        this.musicGain = this.context.createGain();
+        this.effectsGain = this.context.createGain();
+
+        this.masterGain.gain.value = 0;
+        this.musicGain.gain.value = 0.05;
+        this.effectsGain.gain.value = 0.34;
+
+        this.musicGain.connect(this.masterGain);
+        this.effectsGain.connect(this.masterGain);
+        this.masterGain.connect(this.context.destination);
+    }
+
+    startMusic() {
+        if (!this.enabled || !this.context || this.musicTimer) return;
+
+        this.playMusicStep();
+        this.musicTimer = globalThis.setInterval(() => this.playMusicStep(), 420);
+    }
+
+    stopMusic() {
+        if (!this.musicTimer) return;
+
+        globalThis.clearInterval(this.musicTimer);
+        this.musicTimer = null;
+    }
+
+    playMusicStep() {
+        if (!this.enabled || !this.context) return;
+
+        const now = this.context.currentTime;
+        const note = this.musicNotes[this.musicStep % this.musicNotes.length];
+        const bass = note / 2;
+        this.playTone(note, now, 0.16, 'triangle', 0.08, this.musicGain);
+
+        if (this.musicStep % 2 === 0) {
+            this.playTone(bass, now, 0.22, 'sine', 0.06, this.musicGain);
+        }
+
+        this.musicStep += 1;
+    }
+
+    playGoal() {
+        if (!this.enabled || !this.context) return;
+
+        const now = this.context.currentTime;
+        [523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => {
+            this.playTone(frequency, now + (index * 0.08), 0.24, 'triangle', 0.22, this.effectsGain);
+        });
+        this.playNoise(now + 0.08, 0.42, 0.12, 900);
+    }
+
+    playSave() {
+        if (!this.enabled || !this.context) return;
+
+        const now = this.context.currentTime;
+        this.playTone(150, now, 0.18, 'sawtooth', 0.18, this.effectsGain);
+        this.playTone(92, now + 0.08, 0.28, 'sine', 0.24, this.effectsGain);
+        this.playNoise(now, 0.24, 0.1, 180);
+    }
+
+    playTone(frequency, startTime, duration, type, volume, destination) {
+        const oscillator = this.context.createOscillator();
+        const gain = this.context.createGain();
+
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, startTime);
+        gain.gain.setValueAtTime(0.0001, startTime);
+        gain.gain.exponentialRampToValueAtTime(volume, startTime + 0.025);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+        oscillator.connect(gain);
+        gain.connect(destination);
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration + 0.04);
+    }
+
+    playNoise(startTime, duration, volume, frequency) {
+        const sampleRate = this.context.sampleRate;
+        const buffer = this.context.createBuffer(1, sampleRate * duration, sampleRate);
+        const data = buffer.getChannelData(0);
+
+        for (let index = 0; index < data.length; index += 1) {
+            data[index] = (Math.random() * 2) - 1;
+        }
+
+        const source = this.context.createBufferSource();
+        const filter = this.context.createBiquadFilter();
+        const gain = this.context.createGain();
+
+        filter.type = 'bandpass';
+        filter.frequency.value = frequency;
+        filter.Q.value = 1.8;
+        gain.gain.setValueAtTime(volume, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+        source.buffer = buffer;
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.effectsGain);
+        source.start(startTime);
+        source.stop(startTime + duration);
+    }
+}
+
 class PenaltyShootoutGame {
     constructor() {
+        this.audio = new GameAudio();
         this.currency = '$';
         this.balance = 1000;
         this.currentBet = 0;
@@ -41,7 +199,16 @@ class PenaltyShootoutGame {
             currentBetDisplay: document.getElementById('currentBetDisplay'),
             potentialWinDisplay: document.getElementById('potentialWinDisplay'),
             historyList: document.getElementById('historyList'),
+            historyChips: document.getElementById('historyChips'),
+            historyStrip: document.querySelector('.history-strip'),
+            collectAmount: document.getElementById('collectAmount'),
+            shotCallout: document.getElementById('shotCallout'),
+            confettiLayer: document.getElementById('confettiLayer'),
+            modalContent: document.querySelector('.modal-content'),
             resultBanner: document.getElementById('resultBanner'),
+            audioToggle: document.getElementById('audioToggle'),
+            stadium: document.querySelector('.stadium'),
+            goalWrap: document.querySelector('.goal-wrap'),
             ball: document.getElementById('ball'),
             keeper: document.getElementById('keeper'),
             roundModal: document.getElementById('roundModal'),
@@ -56,6 +223,7 @@ class PenaltyShootoutGame {
 
         this.bindEvents();
         this.updateUI();
+        this.updateAudioToggle();
         this.setZonesEnabled(false);
         this.elements.randomShot.disabled = false;
     }
@@ -65,6 +233,7 @@ class PenaltyShootoutGame {
         this.elements.randomShot.addEventListener('click', () => this.randomShot());
         this.elements.collectWinnings.addEventListener('click', () => this.requestCollect());
         this.elements.closeModal.addEventListener('click', () => this.closeModal());
+        this.elements.audioToggle.addEventListener('click', () => this.toggleAudio());
         this.elements.halfBet.addEventListener('click', () => this.adjustBet(0.5));
         this.elements.doubleBet.addEventListener('click', () => this.adjustBet(2));
         this.elements.betAmount.addEventListener('input', () => this.updatePayoutPreview());
@@ -110,6 +279,7 @@ class PenaltyShootoutGame {
     startRound() {
         if (this.isRoundActive) return;
 
+        this.audio.prime();
         const betAmount = Number.parseFloat(this.elements.betAmount.value);
         if (!Number.isFinite(betAmount) || betAmount <= 0) {
             this.setBanner('Apuesta invalida');
@@ -144,6 +314,8 @@ class PenaltyShootoutGame {
     }
 
     randomShot() {
+        this.audio.prime();
+
         if (!this.isRoundActive) {
             this.startRound();
         }
@@ -158,6 +330,7 @@ class PenaltyShootoutGame {
     selectZone(zone) {
         if (!this.isRoundActive || this.awaitingResolution || !this.zoneCoordinates[zone]) return;
 
+        this.audio.prime();
         this.awaitingResolution = true;
         this.setZonesEnabled(false);
         this.elements.randomShot.disabled = true;
@@ -176,14 +349,14 @@ class PenaltyShootoutGame {
         this.emit('shot-requested', payload);
 
         if (this.autoResolveDemo) {
-            window.setTimeout(() => {
+            globalThis.setTimeout(() => {
                 this.resolveShot({
                     scored: true,
                     zone,
                     goalkeeperZone: this.getDemoKeeperZone(zone),
                     transactionId: `demo-${Date.now()}`
                 });
-            }, 650);
+            }, 760);
         }
     }
 
@@ -198,8 +371,12 @@ class PenaltyShootoutGame {
         this.moveKeeper(goalkeeperZone);
         this.clearZoneStates();
         this.markZone(zone, scored ? 'scored' : 'missed');
+        this.finishShotAnimation(zone, scored);
 
         if (!scored) {
+            this.audio.playSave();
+            this.showCallout('¡Atajado!', 'saved');
+            this.shakeStadium();
             this.finishRound({
                 status: 'loss',
                 payout: 0,
@@ -210,6 +387,9 @@ class PenaltyShootoutGame {
         }
 
         this.goals += 1;
+        this.audio.playGoal();
+        this.showCallout(this.goals === this.multipliers.length ? '¡Maximo!' : '¡Gol!', 'goal');
+        this.launchConfetti(this.goals === this.multipliers.length ? 90 : 34);
         this.history.unshift({ status: 'win', multiplier: this.getCurrentMultiplier(), goals: this.goals });
         this.history = this.history.slice(0, 12);
 
@@ -338,11 +518,19 @@ class PenaltyShootoutGame {
     }
 
     emit(name, detail) {
-        window.dispatchEvent(new CustomEvent(`penalty:${name}`, { detail }));
+        globalThis.dispatchEvent(new CustomEvent(`penalty:${name}`, { detail }));
     }
 
     updateUI() {
+        if (typeof this.lastBalance === 'number' && this.balance > this.lastBalance) {
+            this.elements.balance.classList.remove('bump');
+            this.forceReflow(this.elements.balance);
+            this.elements.balance.classList.add('bump');
+        }
+        this.lastBalance = this.balance;
+
         this.elements.balance.textContent = this.formatMoney(this.balance);
+        this.elements.collectAmount.textContent = this.formatMoney(this.getPayoutPreview());
         this.elements.roundStatus.textContent = this.getStatusLabel();
         this.elements.currentMultiplier.textContent = `x${this.getCurrentMultiplier().toFixed(2)}`;
         this.elements.shotCounter.textContent = `${this.goals}/${this.multipliers.length}`;
@@ -350,6 +538,22 @@ class PenaltyShootoutGame {
         this.updatePayoutPreview();
         this.updateMultiplierTrack();
         this.renderHistory();
+    }
+
+    toggleAudio() {
+        this.audio.toggle();
+        this.updateAudioToggle();
+
+        if (this.audio.enabled) {
+            this.setBanner('Sonido ON');
+        } else {
+            this.setBanner('Sonido OFF');
+        }
+    }
+
+    updateAudioToggle() {
+        this.elements.audioToggle.textContent = this.audio.enabled ? 'Sonido ON' : 'Sonido OFF';
+        this.elements.audioToggle.setAttribute('aria-pressed', String(this.audio.enabled));
     }
 
     getStatusLabel() {
@@ -379,6 +583,8 @@ class PenaltyShootoutGame {
 
     renderHistory() {
         this.elements.historyList.innerHTML = '';
+        this.elements.historyChips.innerHTML = '';
+        this.elements.historyStrip.style.visibility = this.history.length ? 'visible' : 'hidden';
 
         if (this.history.length === 0) {
             return;
@@ -389,7 +595,45 @@ class PenaltyShootoutGame {
             element.className = `history-item ${item.status}`;
             element.textContent = item.status === 'loss' ? 'Atajada' : `${item.goals}G x${item.multiplier}`;
             this.elements.historyList.appendChild(element);
+
+            const chip = document.createElement('span');
+            chip.className = `history-chip ${item.status}`;
+            chip.textContent = item.status === 'loss' ? 'X' : `x${item.multiplier}`;
+            this.elements.historyChips.appendChild(chip);
         });
+    }
+
+    showCallout(text, kind) {
+        const callout = this.elements.shotCallout;
+        callout.classList.remove('show', 'goal', 'saved');
+        callout.querySelector('span').textContent = text;
+        callout.classList.add(kind);
+        this.forceReflow(callout);
+        callout.classList.add('show');
+    }
+
+    shakeStadium() {
+        this.elements.stadium.classList.remove('shake');
+        this.forceReflow(this.elements.stadium);
+        this.elements.stadium.classList.add('shake');
+    }
+
+    launchConfetti(count = 34) {
+        const colors = ['#f7d957', '#d9b432', '#22c55e', '#59c9ff', '#ffffff', '#ef4444'];
+        const layer = this.elements.confettiLayer;
+
+        for (let index = 0; index < count; index += 1) {
+            const piece = document.createElement('span');
+            piece.className = 'confetti-piece';
+            piece.style.left = `${Math.random() * 100}%`;
+            piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+            piece.style.setProperty('--fall-time', `${1.8 + (Math.random() * 1.6)}s`);
+            piece.style.setProperty('--fall-delay', `${Math.random() * 0.35}s`);
+            piece.style.setProperty('--drift', `${(Math.random() - 0.5) * 180}px`);
+            piece.style.setProperty('--spin', `${360 + (Math.random() * 540)}deg`);
+            layer.appendChild(piece);
+            globalThis.setTimeout(() => piece.remove(), 4200);
+        }
     }
 
     setZonesEnabled(enabled) {
@@ -412,23 +656,103 @@ class PenaltyShootoutGame {
     }
 
     animateShot(zoneName) {
-        const coordinates = this.zoneCoordinates[zoneName];
-        this.elements.ball.classList.add('kicked');
-        this.elements.ball.style.left = coordinates.left;
-        this.elements.ball.style.top = coordinates.top;
+        const target = this.getZoneCenter(zoneName);
+
+        this.elements.ball.classList.remove('kicked', 'in-net', 'saved', 'hidden');
+        this.elements.goalWrap.classList.remove('net-ripple');
+        this.elements.ball.style.transition = 'none';
+        this.elements.ball.style.left = '50%';
+        this.elements.ball.style.top = '';
+        this.elements.ball.style.bottom = '';
+        this.forceReflow(this.elements.ball);
+
+        const ballRect = this.elements.ball.getBoundingClientRect();
+        const stadiumRect = this.elements.stadium.getBoundingClientRect();
+        const startLeft = ballRect.left - stadiumRect.left + (ballRect.width / 2);
+        const startTop = ballRect.top - stadiumRect.top + (ballRect.height / 2);
+
+        this.elements.ball.style.left = `${startLeft}px`;
+        this.elements.ball.style.top = `${startTop}px`;
         this.elements.ball.style.bottom = 'auto';
+        this.elements.ball.classList.add('kicked');
+
+        this.forceReflow(this.elements.ball);
+        this.elements.ball.style.transition = '';
+
+        globalThis.requestAnimationFrame(() => {
+            this.elements.ball.style.left = `${target.left}px`;
+            this.elements.ball.style.top = `${target.top}px`;
+        });
+    }
+
+    finishShotAnimation(zoneName, scored) {
+        if (scored) {
+            this.triggerNetRipple(zoneName);
+            this.elements.ball.classList.add('in-net');
+            globalThis.setTimeout(() => {
+                if (this.elements.ball.classList.contains('in-net')) {
+                    this.elements.ball.classList.add('hidden');
+                }
+            }, 1200);
+            return;
+        }
+
+        this.elements.ball.classList.add('saved');
+    }
+
+    triggerNetRipple(zoneName) {
+        const target = this.getZoneCenter(zoneName);
+        const goalRect = this.elements.goalWrap.getBoundingClientRect();
+        const stadiumRect = this.elements.stadium.getBoundingClientRect();
+        const hitLeft = ((target.left + stadiumRect.left - goalRect.left) / goalRect.width) * 100;
+        const hitTop = ((target.top + stadiumRect.top - goalRect.top) / goalRect.height) * 100;
+
+        this.elements.goalWrap.style.setProperty('--net-hit-left', `${hitLeft}%`);
+        this.elements.goalWrap.style.setProperty('--net-hit-top', `${hitTop}%`);
+        this.elements.goalWrap.classList.remove('net-ripple');
+        this.forceReflow(this.elements.goalWrap);
+        this.elements.goalWrap.classList.add('net-ripple');
+    }
+
+    forceReflow(element) {
+        return element.offsetWidth;
+    }
+
+    getZoneCenter(zoneName) {
+        const zone = this.elements.goalZones.find((item) => item.dataset.zone === zoneName);
+        if (!zone) {
+            const stadiumRect = this.elements.stadium.getBoundingClientRect();
+            return { left: stadiumRect.width / 2, top: stadiumRect.height * 0.55 };
+        }
+
+        const zoneRect = zone.getBoundingClientRect();
+        const stadiumRect = this.elements.stadium.getBoundingClientRect();
+        const verticalBias = zoneName.includes('top') ? 0.48 : 0.52;
+
+        return {
+            left: zoneRect.left - stadiumRect.left + (zoneRect.width / 2),
+            top: zoneRect.top - stadiumRect.top + (zoneRect.height * verticalBias)
+        };
     }
 
     moveKeeper(zoneName) {
         const coordinates = this.zoneCoordinates[zoneName] || this.zoneCoordinates['bottom-center'];
         const horizontalOffset = Number.parseInt(coordinates.left, 10) - 50;
-        const verticalOffset = Number.parseInt(coordinates.top, 10) < 40 ? -28 : 18;
+        const verticalOffset = Number.parseInt(coordinates.top, 10) < 40 ? -46 : 22;
         const direction = this.getKeeperDirection(zoneName);
+        let lean = 0;
+        if (direction === 'left') {
+            lean = -8;
+        } else if (direction === 'right') {
+            lean = 8;
+        }
+        const stretch = direction === 'center' ? 'scaleX(1.08) scaleY(.94)' : 'scaleX(1.08) scaleY(.96)';
 
         this.clearKeeperResetTimer();
         this.elements.keeper.classList.toggle('dive-left', direction === 'left');
         this.elements.keeper.classList.toggle('dive-right', direction === 'right');
-        this.elements.keeper.style.transform = `translateX(calc(-50% + ${horizontalOffset * 4}px)) translateY(${verticalOffset}px)`;
+        this.elements.keeper.classList.toggle('dive-center', direction === 'center');
+        this.elements.keeper.style.transform = `translateX(calc(-50% + ${horizontalOffset * 6.2}px)) translateY(${verticalOffset}px) rotate(${lean}deg) ${stretch}`;
         this.scheduleKeeperReset();
     }
 
@@ -439,7 +763,7 @@ class PenaltyShootoutGame {
     }
 
     scheduleKeeperReset() {
-        this.keeperResetTimer = window.setTimeout(() => {
+        this.keeperResetTimer = globalThis.setTimeout(() => {
             if (this.isRoundActive && !this.awaitingResolution) {
                 this.resetKeeper(false);
             }
@@ -449,7 +773,7 @@ class PenaltyShootoutGame {
 
     clearKeeperResetTimer() {
         if (this.keeperResetTimer) {
-            window.clearTimeout(this.keeperResetTimer);
+            globalThis.clearTimeout(this.keeperResetTimer);
             this.keeperResetTimer = null;
         }
     }
@@ -458,14 +782,16 @@ class PenaltyShootoutGame {
         if (clearTimer) {
             this.clearKeeperResetTimer();
         }
-        this.elements.keeper.classList.remove('dive-left', 'dive-right');
+        this.elements.keeper.classList.remove('dive-left', 'dive-right', 'dive-center');
         this.elements.keeper.style.transform = 'translateX(-50%)';
     }
 
     resetField() {
         this.clearZoneStates();
         this.resetKeeper();
-        this.elements.ball.classList.remove('kicked');
+        this.elements.goalWrap.classList.remove('net-ripple');
+        this.elements.ball.classList.remove('kicked', 'in-net', 'saved', 'hidden');
+        this.elements.ball.style.transition = '';
         this.elements.ball.style.left = '50%';
         this.elements.ball.style.top = '';
         this.elements.ball.style.bottom = '';
@@ -487,9 +813,14 @@ class PenaltyShootoutGame {
 
     showResultModal(status, payout, detail) {
         const won = status !== 'loss';
-        this.elements.modalTitle.textContent = won ? 'Cobro registrado' : 'Penalti atajado';
+        this.elements.modalTitle.textContent = won ? '¡Ganaste!' : 'Penalti atajado';
         this.elements.modalAmount.textContent = won ? this.formatMoney(payout) : `-${this.formatMoney(this.currentBet)}`;
         this.elements.modalAmount.classList.toggle('loss', !won);
+        this.elements.modalContent.classList.toggle('loss', !won);
+
+        if (won) {
+            this.launchConfetti(70);
+        }
         this.elements.modalDetail.textContent = detail || (won ? 'Liquidacion enviada.' : 'Sin premio.');
         this.elements.roundModal.classList.add('active');
         this.elements.roundModal.setAttribute('aria-hidden', 'false');
@@ -511,5 +842,5 @@ class PenaltyShootoutGame {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    window.PenaltyShootoutGame = new PenaltyShootoutGame();
+    globalThis.PenaltyShootoutGame = new PenaltyShootoutGame();
 });

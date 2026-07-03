@@ -15,7 +15,7 @@
         <header class="top-bar">
             <img class="top-logo" src="assets/TUZOCA-2-Color-(sin-bajada).png" alt="TuZoca">
             <span id="roundStatus">Listo</span>
-            <strong>Zoca Goal</strong>
+            <button class="audio-toggle" id="audioToggle" type="button" aria-pressed="true">Sonido ON</button>
         </header>
 
         <section class="multiplier-hud" aria-label="Multiplicadores">
@@ -32,6 +32,11 @@
             </ol>
             <div class="jackpot-chip">MAX</div>
         </section>
+
+        <section class="history-strip" aria-label="Rondas anteriores">
+            <span class="history-label">Rondas</span>
+            <div class="history-chips" id="historyChips"></div>
+        </section>  
 
         <main class="stadium">
             <div class="light light-left"></div>
@@ -53,6 +58,7 @@
                 </div>
             </div>
             <div class="ball" id="ball" aria-hidden="true"></div>
+            <div class="shot-callout" id="shotCallout" aria-hidden="true"><span></span></div>
             <p class="result-banner" id="resultBanner">Apuesta y tira</p>
         </main>
 
@@ -74,7 +80,10 @@
             <div class="center-actions">
                 <button class="main-play" id="startRound" type="button">Jugar</button>
                 <button class="random-play" id="randomShot" type="button" aria-label="Tiro automatico"><span>Z</span></button>
-                <button class="collect-play" id="collectWinnings" type="button" disabled>Cobrar</button>
+                <button class="collect-play" id="collectWinnings" type="button" disabled>
+                    <em>Cobrar</em>
+                    <strong id="collectAmount">$0.00</strong>
+                </button>
             </div>
 
             <div class="wallet-console">
@@ -93,12 +102,16 @@
 
         <div class="modal" id="roundModal" aria-hidden="true">
             <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+                <div class="modal-glow" aria-hidden="true"></div>
+                <div class="modal-badge" id="modalBadge" aria-hidden="true"></div>
                 <h2 class="modal-title" id="modalTitle">Cobro registrado</h2>
                 <p class="modal-amount" id="modalAmount">$0.00</p>
                 <p class="modal-detail" id="modalDetail">Ronda finalizada</p>
                 <button class="btn-modal" id="closeModal" type="button">Continuar</button>
             </div>
         </div>
+
+        <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
     </div>
 
     <script src="js/game.js"></script>
