@@ -738,7 +738,12 @@ class PenaltyShootoutGame {
     moveKeeper(zoneName) {
         const coordinates = this.zoneCoordinates[zoneName] || this.zoneCoordinates['bottom-center'];
         const horizontalOffset = Number.parseInt(coordinates.left, 10) - 50;
-        const verticalOffset = Number.parseInt(coordinates.top, 10) < 40 ? -46 : 22;
+        const goalRect = this.elements.goalWrap.getBoundingClientRect();
+        const maxHorizontalTravel = Math.min(180, goalRect.width * 0.27);
+        const horizontalTravel = (horizontalOffset / 26) * maxHorizontalTravel;
+        const verticalOffset = Number.parseInt(coordinates.top, 10) < 40
+            ? -Math.min(46, goalRect.height * 0.16)
+            : Math.min(22, goalRect.height * 0.09);
         const direction = this.getKeeperDirection(zoneName);
         let lean = 0;
         if (direction === 'left') {
@@ -752,7 +757,7 @@ class PenaltyShootoutGame {
         this.elements.keeper.classList.toggle('dive-left', direction === 'left');
         this.elements.keeper.classList.toggle('dive-right', direction === 'right');
         this.elements.keeper.classList.toggle('dive-center', direction === 'center');
-        this.elements.keeper.style.transform = `translateX(calc(-50% + ${horizontalOffset * 6.2}px)) translateY(${verticalOffset}px) rotate(${lean}deg) ${stretch}`;
+        this.elements.keeper.style.transform = `translateX(calc(-50% + ${horizontalTravel}px)) translateY(${verticalOffset}px) rotate(${lean}deg) ${stretch}`;
         this.scheduleKeeperReset();
     }
 
