@@ -174,6 +174,7 @@ class PenaltyShootoutGame {
         this.autoResolveDemo = true;
         this.history = [];
         this.keeperResetTimer = null;
+        this.ballResetTimer = null;
         this.multipliers = [1.5, 2, 3, 6, 12];
         this.zoneCoordinates = {
             'top-left': { left: '24%', top: '28%' },
@@ -658,6 +659,7 @@ class PenaltyShootoutGame {
     animateShot(zoneName) {
         const target = this.getZoneCenter(zoneName);
 
+        this.clearBallResetTimer();
         this.elements.ball.classList.remove('kicked', 'in-net', 'saved', 'hidden');
         this.elements.goalWrap.classList.remove('net-ripple');
         this.elements.ball.style.transition = 'none';
@@ -689,10 +691,16 @@ class PenaltyShootoutGame {
         if (scored) {
             this.triggerNetRipple(zoneName);
             this.elements.ball.classList.add('in-net');
-            globalThis.setTimeout(() => {
+            this.clearBallResetTimer();
+            this.ballResetTimer = globalThis.setTimeout(() => {
                 if (this.elements.ball.classList.contains('in-net')) {
-                    this.elements.ball.classList.add('hidden');
+                    if (this.isRoundActive && this.goals < this.multipliers.length) {
+                        this.resetBall();
+                    } else {
+                        this.elements.ball.classList.add('hidden');
+                    }
                 }
+                this.ballResetTimer = null;
             }, 1200);
             return;
         }
@@ -783,6 +791,13 @@ class PenaltyShootoutGame {
         }
     }
 
+    clearBallResetTimer() {
+        if (this.ballResetTimer) {
+            globalThis.clearTimeout(this.ballResetTimer);
+            this.ballResetTimer = null;
+        }
+    }
+
     resetKeeper(clearTimer = true) {
         if (clearTimer) {
             this.clearKeeperResetTimer();
@@ -791,15 +806,20 @@ class PenaltyShootoutGame {
         this.elements.keeper.style.transform = 'translateX(-50%)';
     }
 
-    resetField() {
-        this.clearZoneStates();
-        this.resetKeeper();
-        this.elements.goalWrap.classList.remove('net-ripple');
+    resetBall() {
+        this.clearBallResetTimer();
         this.elements.ball.classList.remove('kicked', 'in-net', 'saved', 'hidden');
         this.elements.ball.style.transition = '';
         this.elements.ball.style.left = '50%';
         this.elements.ball.style.top = '';
         this.elements.ball.style.bottom = '';
+    }
+
+    resetField() {
+        this.clearZoneStates();
+        this.resetKeeper();
+        this.elements.goalWrap.classList.remove('net-ripple');
+        this.resetBall();
     }
 
     adjustBet(factor) {
