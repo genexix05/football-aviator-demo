@@ -48,32 +48,41 @@ button {
     min-height: 100vh;
     overflow: hidden;
     background:
-        radial-gradient(circle at 5% 8%, rgba(255, 255, 255, 0.95) 0 0.45%, rgba(89, 201, 255, 0.7) 0.8%, transparent 5.5%),
-        radial-gradient(circle at 94% 8%, rgba(255, 255, 255, 0.9) 0 0.45%, rgba(89, 201, 255, 0.68) 0.8%, transparent 5.5%),
-        linear-gradient(90deg, rgba(217, 64, 120, 0.2), transparent 28%, transparent 72%, rgba(19, 176, 255, 0.25)),
-        linear-gradient(180deg, #153a69 0%, #17426f 34%, #0c2b42 58%, #0b251b 72%, #04140b 100%);
+        radial-gradient(circle at 5% 7%, rgba(255, 255, 255, 0.95) 0 0.4%, rgba(120, 214, 255, 0.75) 0.9%, rgba(89, 201, 255, 0.28) 2.4%, transparent 7%),
+        radial-gradient(circle at 95% 7%, rgba(255, 255, 255, 0.92) 0 0.4%, rgba(120, 214, 255, 0.72) 0.9%, rgba(89, 201, 255, 0.26) 2.4%, transparent 7%),
+        radial-gradient(ellipse at 50% -12%, rgba(72, 160, 244, 0.4), transparent 58%),
+        linear-gradient(90deg, rgba(190, 60, 130, 0.22), transparent 26%, transparent 74%, rgba(24, 168, 244, 0.26)),
+        linear-gradient(180deg, #081c38 0%, #0f2f56 26%, #16416d 44%, #0c2b42 58%, #0b251b 72%, #04140b 100%);
 }
 
+/* Gradas: publico como bokeh difuso, no como cuadricula */
 .game-shell::before {
     content: "";
     position: absolute;
     inset: 0;
     background:
-        repeating-radial-gradient(ellipse at 50% 42%, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 8px),
-        linear-gradient(180deg, transparent 0 54%, rgba(0, 0, 0, 0.26) 54% 100%);
-    mask-image: linear-gradient(180deg, #000 0 62%, transparent 78%);
-    opacity: 0.48;
+        radial-gradient(circle, rgba(255, 220, 140, 0.5) 0 1px, transparent 2.4px) 3px 2px / 41px 29px,
+        radial-gradient(circle, rgba(150, 205, 255, 0.42) 0 0.9px, transparent 2.2px) 19px 13px / 53px 37px,
+        radial-gradient(circle, rgba(255, 255, 255, 0.38) 0 0.8px, transparent 2px) 31px 7px / 47px 31px,
+        radial-gradient(circle, rgba(240, 150, 150, 0.3) 0 0.9px, transparent 2.1px) 11px 21px / 61px 43px,
+        linear-gradient(180deg, rgba(4, 12, 24, 0.2) 0%, rgba(4, 14, 26, 0.55) 46%, rgba(2, 8, 16, 0.75) 60%);
+    mask-image: linear-gradient(180deg, transparent 0 4%, #000 16% 48%, transparent 62%);
+    opacity: 0.32;
+    filter: blur(0.6px);
     pointer-events: none;
 }
 
+/* Cesped: franjas de corte suaves con perspectiva */
 .game-shell::after {
     content: "";
     position: absolute;
     inset: auto -8vw 0;
-    height: 34vh;
+    height: 36vh;
     background:
-        repeating-linear-gradient(96deg, rgba(255, 255, 255, 0.2) 0 2px, transparent 2px 82px),
-        linear-gradient(180deg, #52b842 0%, #1f7a36 58%, #06220f 100%);
+        repeating-linear-gradient(94deg, rgba(255, 255, 255, 0.03) 0 88px, transparent 88px 176px),
+        radial-gradient(ellipse at 50% -10%, rgba(220, 255, 205, 0.25), transparent 58%),
+        radial-gradient(ellipse at 50% 120%, rgba(0, 0, 0, 0.35), transparent 60%),
+        linear-gradient(180deg, #4fae42 0%, #2f9440 36%, #1c6f30 66%, #0a3517 100%);
     clip-path: polygon(0 26%, 100% 0, 100% 100%, 0 100%);
     pointer-events: none;
 }
@@ -326,31 +335,48 @@ button {
     z-index: 2;
 }
 
-.light {
+/* Vineta cinematografica sobre todo el campo */
+.stadium::after {
+    content: "";
     position: absolute;
-    top: 0;
-    width: 15vw;
-    height: 74vh;
-    opacity: 0.55;
-    filter: blur(1px);
+    inset: 0;
+    z-index: 1;
+    background: radial-gradient(ellipse at 50% 42%, transparent 0 52%, rgba(2, 8, 18, 0.42) 100%);
     pointer-events: none;
 }
 
+.light {
+    position: absolute;
+    top: 0;
+    width: 16vw;
+    height: 78vh;
+    opacity: 0.6;
+    filter: blur(2px);
+    pointer-events: none;
+    mix-blend-mode: screen;
+}
+
 .light-left {
-    left: 7vw;
-    background: linear-gradient(105deg, rgba(115, 219, 255, 0.52), transparent 56%);
+    left: 6vw;
+    background:
+        linear-gradient(105deg, rgba(140, 226, 255, 0.55), transparent 52%),
+        linear-gradient(113deg, rgba(255, 255, 255, 0.22), transparent 34%);
     transform: skewX(-12deg);
+    animation: light-sway 7s ease-in-out infinite;
 }
 
 .light-right {
-    right: 8vw;
-    background: linear-gradient(255deg, rgba(115, 219, 255, 0.52), transparent 56%);
+    right: 7vw;
+    background:
+        linear-gradient(255deg, rgba(140, 226, 255, 0.55), transparent 52%),
+        linear-gradient(247deg, rgba(255, 255, 255, 0.22), transparent 34%);
     transform: skewX(12deg);
+    animation: light-sway 7s ease-in-out 3.5s infinite;
 }
 
 .goal-wrap {
     position: absolute;
-    top: clamp(90px, 17vh, 128px);
+    top: clamp(120px, 22vh, 180px);
     left: 50%;
     z-index: 4;
     width: min(76vw, 760px);
@@ -359,13 +385,19 @@ button {
     transform: translateX(-50%);
 }
 
+/* Red trasera: cae en perspectiva detras del marco, sin cruzar el campo */
 .goal-depth {
     position: absolute;
-    inset: 8% -4% -2% 5%;
-    border: 5px solid rgba(215, 220, 225, 0.72);
-    border-left: 0;
-    transform: skewY(-7deg);
-    opacity: 0.42;
+    inset: -3% -2.5% -6% -2.5%;
+    background:
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 18px),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 16px);
+    transform: perspective(500px) rotateX(14deg);
+    transform-origin: 50% 100%;
+    border-radius: 10px 10px 0 0;
+    opacity: 0.55;
+    mask-image: linear-gradient(180deg, #000 0 70%, transparent 100%);
+    pointer-events: none;
 }
 
 .goal-frame {
@@ -375,15 +407,32 @@ button {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(2, 1fr);
-    border: 9px solid rgba(238, 238, 232, 0.95);
+    border: 9px solid #f2f4f5;
     border-bottom-width: 12px;
-    border-radius: 5px 5px 0 0;
+    border-radius: 6px 6px 0 0;
     background:
-        radial-gradient(circle, transparent 0 56%, rgba(255, 255, 255, 0.42) 57% 60%, transparent 61%) 0 0 / 32px 28px,
-        radial-gradient(circle at 50% 50%, rgba(68, 158, 217, 0.36), rgba(7, 28, 54, 0.64));
+        radial-gradient(ellipse at 50% 0%, rgba(160, 215, 255, 0.1), transparent 62%),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.3) 0 1.4px, transparent 1.4px 17px),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.26) 0 1.4px, transparent 1.4px 15px),
+        linear-gradient(180deg, rgba(8, 26, 50, 0.22), rgba(5, 16, 32, 0.34));
     box-shadow:
-        inset 0 0 70px rgba(255, 255, 255, 0.12),
-        0 26px 60px rgba(0, 0, 0, 0.44);
+        inset 0 0 46px rgba(8, 26, 52, 0.28),
+        inset 0 3px 0 rgba(255, 255, 255, 0.55),
+        inset 3px 0 0 rgba(255, 255, 255, 0.35),
+        inset -3px 0 0 rgba(255, 255, 255, 0.35),
+        inset 0 -4px 0 rgba(6, 20, 38, 0.25),
+        0 26px 60px rgba(0, 0, 0, 0.42);
+}
+
+/* Sombra de contacto de la porteria con el cesped */
+.goal-wrap::after {
+    content: "";
+    position: absolute;
+    inset: auto -4% -22px;
+    height: 36px;
+    background: radial-gradient(ellipse at 50% 50%, rgba(2, 12, 6, 0.42), transparent 66%);
+    filter: blur(4px);
+    pointer-events: none;
 }
 
 .goal-frame::after {
@@ -418,16 +467,16 @@ button {
 
 .goal-zone::before {
     content: "";
-    width: clamp(58px, 8.4vw, 92px);
-    height: clamp(58px, 8.4vw, 92px);
+    width: clamp(56px, 8vw, 88px);
+    height: clamp(56px, 8vw, 88px);
     border-radius: 50%;
     background:
-        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.68) 0 9%, transparent 10%),
-        radial-gradient(circle, rgba(255, 255, 255, 0.08) 0 57%, rgba(255, 255, 255, 0.66) 58% 62%, transparent 63%),
-        repeating-conic-gradient(from 18deg, rgba(7, 19, 32, 0.12) 0 10deg, rgba(255, 255, 255, 0.18) 10deg 20deg),
-        rgba(255, 255, 255, 0.13);
-    border: 2px solid rgba(255, 255, 255, 0.28);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22), inset 0 0 22px rgba(255, 255, 255, 0.2);
+        radial-gradient(circle, rgba(255, 255, 255, 0.85) 0 7%, transparent 8.5%),
+        radial-gradient(circle, transparent 0 34%, rgba(255, 255, 255, 0.45) 35% 38%, transparent 39.5%),
+        radial-gradient(circle, transparent 0 60%, rgba(255, 255, 255, 0.55) 61% 64%, transparent 65.5%),
+        radial-gradient(circle, rgba(140, 200, 255, 0.12), transparent 70%);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
     transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
 }
 
@@ -980,6 +1029,16 @@ button {
     font-size: 1rem;
     font-weight: 700;
     text-transform: uppercase;
+}
+
+@keyframes light-sway {
+    0%, 100% {
+        opacity: 0.42;
+    }
+
+    50% {
+        opacity: 0.68;
+    }
 }
 
 @keyframes step-pulse {
